@@ -1,0 +1,377 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robotPWM_files/RobotLib.js"></script>
+<script type="text/javascript" src="robotPWM_files/drawEric.js"></script>
+<script type="text/javascript" src="robotPWM_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robotPWM_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20
+ 
+ var active = false
+ var langle = 0
+ var rangle = 0 
+ var speeds = [0, 0]		// array of speeds for the no wall situations
+ var inBoxIds = ["robLeftNoObj", "robRightNoObj"]
+													// names associated with the boxes for entering these speeds
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 85 :		// 'u' or 'U' mean set user mode
+		case 117 :  checkOpt(1)
+					break
+		case 80 :		// 'p' or 'P' mean set auto prog mode
+		case 112 :  checkOpt(0)
+					break
+		case 76 :		// 'l' or 'L' mean focus on defining first speed : no wall on left
+		case 108 :  focusOn(0)
+					break
+		case 82 :		// 'r' or 'R' mean focus on defining second speed : no wall on right
+		case 114 :  focusOn(1)
+					break
+		case 87 :       // W 38   means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+					deFocus()
+					break
+		default: checkKeyRest()
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+
+function drawArrow(col, lw, alen) {
+// draw line on motor to indicate its rotation angle
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.strokeStyle=col
+	ctx.lineWidth = lw
+	putPoints(ctx, [cw*75, ch*50, cw*75+ ch*alen*Math.cos(angle), ch*50+ch*alen*Math.sin(angle)], false)
+}
+
+function drawHResistor(ctx, x, y, sz) {
+		// draw resistor
+	putPoints (ctx, [x, y, x+sz, y-2*sz, x+3*sz, y+2*sz, x+5*sz, y-2*sz, x+7*sz, y+2*sz, x+9*sz, y-2*sz, x+11*sz, y+2*sz, x+12*sz, y], false)
+}
+
+function clearInfo() {
+var canvas = document.getElementById("myCanvasInfo");
+var ctx=canvas.getContext("2d");
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+	ctx.font = "12pt Calibri"
+}
+
+function drawBridge(isrev, isLeft) {
+	// draw bridge circuit and associated resistor
+var canvas = document.getElementById("myCanvasInfo");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+var xpos = (isLeft) ? 35*cw : 65*cw
+
+	ctx.fillStyle="black"
+	ctx.textAlign = "right"
+	ctx.textBaseline="middle"
+	ctx.fillText("PWM", xpos+cw*8, ch*50)								// show V for PWM signal
+
+	ctx.strokeStyle="black"
+	ctx.lineWidth = 2
+
+	putPoints(ctx, [xpos+cw*10, ch*50, xpos+cw*12, ch*50], false)				// draw line, resistor, line to bridge
+	drawHResistor (ctx, xpos+cw*12, ch*50, cw/2)
+	putPoints(ctx, [xpos+cw*18, ch*50, xpos+cw*20, ch*50, xpos+cw*20, ch*60], false)
+
+	putPoints(ctx, [xpos+10*cw,65*ch, xpos+10*cw,60*ch, xpos+30*cw,60*ch, xpos+30*cw, 65*ch], false)		// draw lines above switches
+	putPoints(ctx, [xpos+10*cw,70*ch, xpos+10*cw, 80*ch], false)									// to side
+	putPoints(ctx, [xpos+30*cw,70*ch, xpos+30*cw, 80*ch], false)
+	putPoints(ctx, [xpos+10*cw,85*ch, xpos+10*cw,90*ch, xpos+30*cw,90*ch, xpos+30*cw, 85*ch], false)		//below switches
+	
+	putPoints(ctx, [xpos+10*cw,75*ch, xpos+16*cw, 75*ch], false)
+	putPoints(ctx, [xpos+30*cw,75*ch, xpos+24*cw, 75*ch], false)
+	putPoints(ctx, [xpos+20*cw, 90*ch, xpos+20*cw, 92*ch], false)
+	putPoints(ctx, [xpos+20*cw-6, 92*ch, xpos+20*cw+6, 92*ch], false)
+	putPoints(ctx, [xpos+20*cw-4, 93*ch, xpos+20*cw+4, 93*ch], false)
+	putPoints(ctx, [xpos+20*cw-2, 94*ch, xpos+20*cw+2, 94*ch], false)
+	
+	ctx.fillStyle = "grey";								// draw motor
+	ctx.beginPath()
+	ctx.arc(xpos+20*cw, 75*ch, 3*cw, 0, 2*Math.PI)
+	ctx.fill()
+	ctx.fillStyle = "black";
+    ctx.fillRect(xpos+16*cw, 73*ch, 1*cw, 4*ch);
+    ctx.fillRect(xpos+23*cw, 73*ch, 1*cw, 4*ch);
+	ctx.fillText("+", xpos+16*cw, 70*ch)
+	ctx.fillText("-", xpos+24*cw, 70*ch)
+	
+	ctx.lineWidth = 4
+	if (isrev) {										//now draw open/closed switches
+		putPoints(ctx, [xpos+10*cw,65*ch, xpos+8*cw,69*ch], false)
+		putPoints(ctx, [xpos+30*cw,65*ch, xpos+30*cw,70*ch], false)
+		putPoints(ctx, [xpos+10*cw,85*ch, xpos+10*cw,80*ch], false)
+		putPoints(ctx, [xpos+30*cw,85*ch, xpos+32*cw,81*ch], false)
+		
+	}
+	else {
+		putPoints(ctx, [xpos+10*cw,65*ch, xpos+10*cw,70*ch], false)
+		putPoints(ctx, [xpos+30*cw,65*ch, xpos+32*cw,69*ch], false)
+		putPoints(ctx, [xpos+10*cw,85*ch, xpos+8*cw,81*ch], false)
+		putPoints(ctx, [xpos+30*cw,85*ch, xpos+30*cw,80*ch], false)
+	}
+}
+
+function drawPWM(speed, isLeft) {
+		// draw PWM signal, average and measured signal
+var canvas = document.getElementById("myCanvasInfo");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+var xpos = (isLeft) ? 35*cw : 65*cw
+	
+	ctx.lineWidth = 2										// draw average speed
+	ctx.strokeStyle="red"
+	var y = ch*(40 - 30*Math.abs(speed)/16)
+	putPoints(ctx, [xpos+cw*10, y, xpos+cw*27, y], false)
+	ctx.strokeStyle="black"									// draw axes
+	putPoints (ctx, [xpos+cw*10, ch*7, xpos+cw*10, ch*40, xpos+cw*27, ch*40], false)
+	ctx.strokeStyle="blue"
+	ctx.lineWidth=3
+	var x = xpos+3+cw*10, x2
+	for (var ct=0; ct<2; ct++) {					// two repeats of signals
+		x2 = x + cw*Math.abs(speed)/2
+		putPoints(ctx, [x, ch*40, x, ch*10, x2, ch*10, x2, ch*40, x+cw*8, ch*40], false)						// high to low
+		x = x + cw*8
+	}
+
+	ctx.fillStyle="black"								// label signal
+	ctx.textAlign = "right"
+	ctx.textBaseline="middle"
+	ctx.fillText(Math.abs(speed).toString(), xpos+cw*9, y)
+	ctx.fillText("PWM", xpos+cw*8, ch*7)
+	ctx.fillText("t", xpos+cw*28, ch*40)
+}
+
+function getState(r) {
+var rState
+  if ( (robots[r].getSensor(0)<=100) && (robots[r].getSensor(2)<=100) ) rState = 4
+  else if (robots[r].getSensor(2)<=100) rState = 3
+  else if (robots[r].getSensor(0)<=100) rState = 2
+  else rState = 1
+  return rState
+}	 
+
+function robotAdjust() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width;
+var ch = canvas.height;
+
+var x = robots[0].robotx
+var y = robots[0].roboty
+var ans = 0
+	for (var ct=0.2; ct<0.5; ct+=0.05)
+		if (x>cw*ct && x<cw*(1-ct) && y>ch*ct && y<ch*(1-ct) ) {
+			ans++
+		}
+	return ans	
+}
+
+	
+function getSpeed (isLeft, state) {
+	var ans = 0
+	   switch(state) {
+	       case 1 : ans = 8 + robotAdjust()
+					break
+	       case 2 : ans = (isLeft) ? 6 : -6
+					break
+	       case 3 : ans = (isLeft) ? -6 : 6
+					break
+			case 4 : ans = (isLeft) ? -2 : (Math.random() > 0.5) ? 2 : -2
+					break	
+		}
+		return ans
+}
+
+function godrawEric(lspeed, rspeed) {
+var canvas = document.getElementById("myCanvasInfo");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 300;
+var ch = canvas.height / 100;
+var ericAngle = 450-robots[0].angle*180/Math.PI
+var wangles = [langle, rangle]
+
+	if (ericAngle>270) {
+		ericAngle -= 360
+//		wangles [rangle, langle]
+	}
+	else if (ericAngle>90) 	{
+		ericAngle -= 180
+		wangles = [-rangle, -langle]
+	}
+
+	drawEric (ctx, cw, ch, cw*55, ch*45, ericAngle, 0, wangles, 0)		// draw
+	langle = langle + lspeed*Math.PI/720
+	rangle = rangle + rspeed*Math.PI/720
+	
+}
+
+function moveTheRobots() {
+var state, lspeed, rspeed, lsensor, rsensor, r, rt
+	checkKeySpecial()
+	mouseSel = 0
+	keySel = 0
+	robots[0].robotDraw(false)
+	state = getState(0);
+	if (document.getElementById("isUser").checked && state == 1) {
+		checkStrings()    			// update speeds array from text boxes
+		lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[0]
+		rspeed = speeds[1]
+	}
+	else {
+		lspeed = getSpeed(true, state)  
+		rspeed = getSpeed(false, state)
+	}	
+	robots[0].moveRobot(lspeed, rspeed)
+	robots[0].robotDraw(true)
+	redrawEnvironment(robots[0].ctx)
+	
+	clearInfo()
+	drawBridge(lspeed<0, true)
+	drawPWM(lspeed, true)
+	drawBridge(rspeed<0, false)
+	drawPWM(rspeed, false)
+	godrawEric(lspeed, rspeed)
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){moveTheRobots()},simtime);
+}
+
+function checkOpt(val) {
+	document.getElementById("isProged").checked = (val == 0)
+	document.getElementById("isUser").checked = (val == 1)
+	
+	var rvis = (val == 1) ? "visible" : "hidden"
+	document.getElementById("LMBack").style.visibility = rvis
+	document.getElementById("robLeftNoObj").style.visibility = rvis
+	document.getElementById("robRightNoObj").style.visibility = rvis
+	document.getElementById("w1").style.visibility = rvis
+	document.getElementById("spstr").style.visibility = rvis
+	document.getElementById("rmstr").style.visibility = rvis
+
+}
+
+function load() {
+    window.defaultStatus="RJM's Robot System";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	document.getElementById("LMBack").checked = true
+	
+	numRobs = 1
+	robots[0] = new aRobot(200, 90, 10, ctx)
+	robots[0].basecol = "rgb(0, 128, 128)"
+	robots[0].defineSensors([2, 0, 2])
+	
+	numLights = 0
+
+	addKeySpecial()
+  	addMouseDown(canvas)
+	mouseSel = 0
+
+    var canvas2 = document.getElementById("myCanvasInfo");
+	var ctx2 = canvas2.getContext("2d");
+	ctx2.font = '14pt Calibri';
+	
+	checkOpt(0)
+	setGrayBack()
+
+    handleResize();
+	
+	setRobotTimer()
+	active = true
+}
+
+function handleResize(evt) {
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+   var canvas2  = document.getElementById("myCanvasInfo")
+    canvas2.setAttribute('width', newWidth);				// set canvas so expands with browser
+
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Robot Demo</h1>
+				<p>Watch a robot move around and see its PWM signal change.</p>
+				<p>It has been programmed to turn away from walls, and to go faster
+				as it gets closer to the middle of the arena. See the PWM signal
+				change with speed, and the bridge switches change when a motor reverses.</p>
+				<p>If you click on the arena you reposition the robot there. 
+				You can also choose to define the left and right speeds when the robot is in the open.</p>
+				<h2>Keyboard controls</h2>
+				<p>P U set program/user mode. In user mode L and R for setting speeds, W to reverse wires.</p>
+				<p>For moving robot, press I, J, K or M to move it up, left, right or down.</p>
+		</div>
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="200"></canvas>
+				<canvas id="myCanvasInfo" name="myCanvasInfo" width="772" height="200"></canvas>
+				<div class="left">
+				<p>Preprogrammed Speed<input type="checkbox" id="isProged" checked="checked" onchange="checkOpt(0);"></p>
+				<p id="w1" style="visibility: hidden;">When No Wall is found :</p>
+				</div>
+				<div class="right">
+				<p>User define speed in open <input type="checkbox" id="isUser" onchange="checkOpt(1);"></p>
+				<p id="spstr" style="visibility: hidden;">Left motor<input type="text" id="robLeftNoObj" size="2" tabindex="1" value="0" style="visibility: hidden;">
+				&nbsp; Right motor<input type="text" id="robRightNoObj" size="2" tabindex="2" value="0" style="visibility: hidden;"></p>
+				<p id="rmstr" style="visibility: hidden;">Reverse Left Motor<input type="checkbox" id="LMBack" checked="checked" style="visibility: hidden;"></p>
+				</div>	
+
+			</form>
+			
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robotPWM_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+</body></html>

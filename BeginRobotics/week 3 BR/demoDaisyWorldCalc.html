@@ -1,0 +1,320 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoDaisyWorldCalc_files/BoxLib.js"></script>
+<script type="text/javascript" src="demoDaisyWorldCalc_files/GraphLib.js"></script>
+<script type="text/javascript" src="demoDaisyWorldCalc_files/calcDaisyWorld.js"></script>
+<link rel="stylesheet" type="text/css" href="demoDaisyWorldCalc_files/style.css">
+
+<script language="JavaScript">
+
+//  (c) Prof Richard Mitchell
+// Program to simulate daisyworld - Lovelock and Watson's imaginary planet
+// to demonstrate that life can help adapt the environment
+
+<!-- Begin
+
+ var simtime = 50
+ var pos = 0					// for showing position
+ var howOption = 0				// how many daisies option
+ var active = false
+ var keySpecial = 0
+ //var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+ var motorCol = "rgb(164, 164, 164)"
+ var daisyG, tempG				// graph of daisy population and temperature
+ var dWorld						// object for daisyworld
+	
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 50 :		// 2 for 2 daisies
+					howMany(0)
+					break	
+		case 51 :		// 3 for 3 daisies
+					howMany(1)
+					break	
+		case 52 :		// 4 for 4 daisies
+					howMany(2)
+					break	
+		case 54 :		// 6 for 6 daisies
+					howMany(3)
+					break	
+		case 56 :		// 8 for 8 daisies
+					howMany(4)
+					break	
+		case 66 :     // B = black
+		case 98 :
+					howMany(5)
+					break
+		case 87 :     // W = white
+		case 119 :
+					howMany(6)
+					break
+		case 65 :     // A = animate
+		case 97 :
+					animateDaisy()
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function getData(wv){
+		// extract number of each species of daisy
+var ans = [0,0,0,0,0,0,0,0,0,0,0]
+	for (ct = 0; ct<dWorld.numSpecies; ct++) ans[ct] = dWorld.daisies[ct].data[wv]			// get nth species
+	return ans
+}
+
+function getCols(){
+		// extra albedo of each species of daisy
+var ans = [0,0,0,0,0,0,0,0,0,0,0]
+	for (ct = 0; ct<dWorld.numSpecies; ct++) ans[ct] = dWorld.daisies[ct].albedo
+	return ans
+}
+
+function findMinMax (col) {
+		// find min and max values of daisy population in column col
+var ans = [1000, -1000]			// default min/max
+var rdata = []
+var val
+	for (var ct= 0; ct< pointsmax; ct++) {
+		rdata = getData(ct)
+		val = rdata[col]
+		if (val < ans[0]) ans[0] = val
+		if (val > ans[1]) ans[1] = val
+	}
+	return ans
+}	
+
+function getcolrgb (fract) {
+	//fraction of 256 is grey level ... convert to string representation
+var gcol = (Math.round(fract*255)).toString() 
+var astr = "rgb("+gcol+","+gcol+","+gcol+")"
+	return astr
+}
+
+function drawWorld() {
+		// draw the world
+		// have concentric colours whose areas reflect proportion of each colour
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+var gcol = ""
+var thisW = getData(pos)
+var cols = getCols()
+var amt = 1, rad = 1   // amt is proportion displayed; rad is radius of equiv circle
+var defrad = ch*40
+	if (defrad>cw*20) defrad = cw*20
+
+var totDaisy = 0		// calculate the total number of daisies
+	for(ct = 0; ct< dWorld.numSpecies; ct++) totDaisy += thisW[ct]
+	for(ct = 0; ct< dWorld.numSpecies; ct++) thisW[ct] /= totDaisy			// so all are as proportions
+
+	for(ct = 0; ct< dWorld.numSpecies; ct++) {					// for each colour
+		gcol = (Math.round(cols[ct]*255)).toString()
+		ctx.fillStyle = getcolrgb(cols[ct])						// calculate colour
+				
+		if (rad > 0) {											// radius of circle left
+			ctx.beginPath()
+			ctx.arc (cw*75, ch*50, defrad*amt, 0, 2*Math.PI)		// draw in current colour
+			ctx.fill()
+			rad = rad * Math.sqrt(amt - thisW[ct])				// now calculate radius of 'rest'
+			amt = amt - thisW[ct]								// remove amount due to this specie
+		}	
+	}
+}
+
+function doScan() {
+		// function called when animating the world
+	checkKeySpecial()				// check user input
+   if (active) {
+		drawGraphs()				// draw the daisy/temp graphs up to current 'time'
+		drawWorld()					// and world - showing areas of each daisy
+		pos = pos + 1				// test if at end
+		if (pos >= pointsmax) {
+			active = false
+			pos = -1
+			document.getElementById("animbutton").value = "Animate Daisyworld"
+					//reached end so change text in button 
+		}	
+   }
+}   
+
+function setAnimTimer() {
+	setInterval(function(){doScan()},simtime);
+}
+
+function animateDaisy() {
+		// called when user starts animation
+var bstr = "Pause Animation"
+	if (pos < 0) {					// if not already started
+		pos = 0
+		active = true				// start
+	}
+	else {
+		active = !active			// if started then move to pause mode
+		if (active == false) bstr = "Resume Animation"
+	}	
+	document.getElementById("animbutton").value = bstr
+}
+
+function drawGraphs() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);		// first clear canvas
+	ctx.font = '12pt Calibri';
+
+var ct
+	var du = (active) ? dWorld.timeScale[pos] : 0		// to define where draw to when animating
+	daisyG.drawuntil = du
+	tempG.drawuntil = du
+
+	defColours = [getcolrgb(dWorld.daisies[1].albedo), getcolrgb(dWorld.daisies[2].albedo)]
+					// define basic colours
+	daisyG.plottworesponse (dWorld.timeScale, dWorld.daisies[2].data, dWorld.daisies[1].data, dWorld.numSpecies>2, 0, 0, "", "", "")
+					// plot graph of two species
+	defColours = ["blue", "red"]
+	tempG.plottworesponse (dWorld.timeScale, dWorld.nolifetemp, dWorld.worldtemp, true, 0, 0, "", "", "")
+					// draw graph of temperature - no life and with life
+					
+	for (ct = 3; ct < dWorld.numSpecies; ct++) {
+		daisyG.goplotdata(getcolrgb(dWorld.daisies[ct].albedo), dWorld.timeScale, dWorld.daisies[ct].data)
+	}				// append to daisy graph all other species
+	
+	daisyG.ctx.textAlign = "center"				// now label graphs
+	daisyG.ctx.textBaseline="bottom"
+	daisyG.ctx.fillText ("Daisy Populations", (daisyG.xsmax+daisyG.xsmin)/2, daisyG.ysmax-2)
+	tempG.ctx.fillText ("Temperature with/without Daisies", (tempG.xsmax+tempG.xsmin)/2, tempG.ysmax-2)
+
+}
+
+function howMany(n) {
+			//n is option of how many daisies
+	howOption = n;												// check the appropriate checkbox
+	document.getElementById("TwoSpecies").checked = n == 0
+	document.getElementById("ThreeSpecies").checked = n == 1
+	document.getElementById("FourSpecies").checked = n == 2
+	document.getElementById("SixSpecies").checked = n == 3
+	document.getElementById("EightSpecies").checked = n == 4
+	document.getElementById("blackSpecies").checked = n == 5
+	document.getElementById("whiteSpecies").checked = n == 6
+	pos = 0
+	var nspecies=[2, 3, 4, 6, 8, 1, 1]							// define array of possible num daisies
+	dWorld.initRun(nspecies[n], (n==5) ? 0.2 : 0.8, (n==6) ? 0.8 : 0.2)
+			// set up the run, with the albedos of the daisies
+			// if n == 6, is white daisy only so need to specify different albedo
+	dWorld.simulate()				// run simulation
+	drawGraphs()					// draw graphs
+	drawWorld()						// and then show daisy world
+}
+
+function load() {
+    window.defaultStatus="RJM's Daisyworld Demo";
+
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+
+	var canvas = document.getElementById("myCanvasSYS");
+
+	dWorld = new daisyWorld()				// create daisyworld object
+	
+	daisyG = new myjsGraph (canvas, 10, 7, 40, 35, true, true, canvasback, "14pt Calibri")
+	tempG = new myjsGraph (canvas, 10, 55, 40, 35, true, true, "black", "14pt Calibri")
+					// set up graph object
+	
+	howMany(0)		// by default, two species
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas	
+    handleResize();
+
+	setAnimTimer()
+}
+
+ function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   canvas.setAttribute('width', robotWrapper.clientWidth - 100);
+   var cw = canvas.width / 100				//now set up where graphs are drawn / size
+   daisyG.xsmin = cw*10
+   daisyG.xsmax = cw*50
+   tempG.xsmin = cw*10
+   tempG.xsmax = cw*50
+   
+	drawGraphs()
+	drawWorld()
+}
+
+window.addEventListener('resize', handleResize);
+ 	
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>DaisyWorld </h1>
+				
+				<p>See how well Daisies control temperature on DaisyWorld</p>
+				<p>You can have 2, 4 or 8 species of daisy, and can see how their populations vary as Daisyworld's
+				sun heats up, and so affect the planet's temperature. The graphs show the variation.</p>
+				<p>Also shown is the proportions of the planet occupied by each species. Press Animate and see
+				how these change with time</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>Press 2, 3, 4, 6 or 8 for number of daisy species, B/W for black or white only and A to animate.</p>
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p>
+				<input type="button" id="animbutton" value="Animate DaisyWorld" onclick="animateDaisy();">
+				</p>
+				<p id="p1">
+				</p></div>
+				<div class="right">
+				<p>2<input type="checkbox" id="TwoSpecies" checked="checked" onchange="howMany(0)"> 
+				  ; 3<input type="checkbox" id="ThreeSpecies" onchange="howMany(1)">
+				  ; 4<input type="checkbox" id="FourSpecies" onchange="howMany(2)">
+				  ; 6<input type="checkbox" id="SixSpecies" onchange="howMany(3)">
+				  ; 8<input type="checkbox" id="EightSpecies" onchange="howMany(4)">Species
+				</p>
+				<p>Black<input type="checkbox" id="blackSpecies" onchange="howMany(5)"> 
+				  ; White<input type="checkbox" id="whiteSpecies" onchange="howMany(6)"> only daisies
+				</p></div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Dr Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoDaisyWorldCalc_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+</body></html>

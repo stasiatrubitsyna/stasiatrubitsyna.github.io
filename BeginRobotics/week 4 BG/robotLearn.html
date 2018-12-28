@@ -1,0 +1,320 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robotLearn_files/RobotLib.js"></script>
+<script type="text/javascript" src="robotLearn_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robotLearn_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20
+ 
+ var robot
+ var active = false
+ var Probs = [25, 25, 25, 25,  25, 25, 25, 25,   25, 25, 25, 25,   25, 25, 25, 25]
+// var Probs = [97, 1, 1, 1,  1, 97, 1, 1,   1, 1, 97, 1,   1, 1, 1, 97]
+ var Speeds = [4, 4, -4, -4, 4, -4, 4, -4]
+
+
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 65 :       // A    means reset All
+		case 97 :
+					checkStr()
+					setchecked(0)
+					break
+		case 78 :       // N means reset None Probabilities
+		case 110 :
+					checkStr()
+					setchecked(1)
+					break
+		case 76 :       // L means reset Left Probabilities
+		case 108 :
+					checkStr()
+					setchecked(2)
+					break
+		case 82:       // R    means reset Right Probabilities
+		case 114 :
+					checkStr()
+					setchecked(3)
+					break
+		case 66 :       // B    means reset Both Probabilities
+		case 98 :
+					checkStr()
+					setchecked(4)
+					break
+		case 69 :       // E  means toggle environment Wire box
+		case 101 :
+					checkStr()
+					document.getElementById("Env").checked = !document.getElementById("Env").checked
+					checkEnvironment()
+					break
+		case 83 :       // S means toggle stop start
+		case 115 :
+					checkStr()
+					startstop()
+					deFocus()
+					break
+		case 85 :		// 'u' or 'U' mean toggle use both race
+		case 117 :  checkStr()
+					document.getElementById("CBoth").checked = !document.getElementById("CBoth").checked
+					break
+		default :	checkKeyRest()			
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+	
+function getState() {
+var actionNo
+var allowBoth = document.getElementById("CBoth").checked
+  if ( allowBoth && (robot.getSensor(0)<=100) && (robot.getSensor(2)<=100) ) actionNo = 3
+  else if (robot.getSensor(2)<=100) actionNo = 2
+  else if (robot.getSensor(0)<=100) actionNo = 1
+  else actionNo = 0
+  return actionNo
+}	 
+	
+function getAction(actionNo) {
+var rno = 100*Math.random();
+var aBase = actionNo*4
+var asum = Probs[aBase]
+var ct = 0
+while (rno > asum  && ct < 3) {
+    ct = ct + 1
+	asum = asum + Probs[aBase+ct]
+}
+return ct
+}
+
+function evaluate (action, state, distWas, distIs, lspeed, rspeed, stuck) {
+var howgood = 0
+var probbase = state*4
+	switch (state) {
+	    case 0 : howgood = (stuck) ? -3 : 0
+		         if (distIs > distWas) howgood++
+				 if (lspeed + rspeed > 0) howgood++
+//				 if ( (lspeed + rspeed) == 0) howgood++				// attempt to reward FB BF ok
+//				 else if (lspeed + rspeed > 0) howgood+=6
+//				 howgood /= 4
+				 break
+		case 1 :  // howgood = (distIs >= distWas && stuck == false) ? 1 : -2
+				 howgood = (stuck) ? -3 : 0
+				 if (distIs > distWas) howgood++
+				 else if (distIs < distWas) howgood -= 2
+				 else if (lspeed > 0 || rspeed > 0) howgood++
+				break
+		case 2 :  // howgood = (distIs >= distWas && stuck == false) ? 1 : -2
+				 howgood = (stuck) ? -3 : 0
+				 if (distIs > distWas) howgood++
+				 else if (distIs < distWas) howgood -= 2
+				 else if (lspeed > 0 || rspeed > 0) howgood++
+				 break
+		case 3 : howgood = (distIs >= distWas && stuck == false) ? 1 : -2
+		break
+	}
+	var pndx = 0
+	var minProb = 2
+	for (var ct = 0; ct < 4; ct++) {				// look at each action
+	    if (ct != action) {
+			if (howgood>0) {							// if action was good
+				if (Probs[probbase+ct]> minProb) {
+					Probs[probbase+ct]--			// decrement other probs if > min
+					Probs[probbase+action]++		// increment prob of good action
+				}	
+			}
+			else {
+				for (var ct2 = 0; ct2 > howgood; ct2--) {       // penalise twice as much
+					if (Probs[probbase+action]> minProb) {
+						Probs[probbase+ct]++		// increment probs of other action
+						Probs[probbase+action]--	// and decrement prob of this action
+					}	
+				}	
+			}
+		}	
+	}
+	showProbs(state)
+}
+
+	
+function moveTheRobot() {
+var action = 0
+var currstate
+var distwas
+	checkKeySpecial()
+  if (active) {
+	currstate = getState()
+	action = getAction(currstate)
+	distwas = robot.lookahead()     //robot.detectObject(20, 0)
+	lspeed = Speeds[action]
+	rspeed 	= Speeds[action+4]
+	robot.robotDraw(false)
+	robot.moveRobot(lspeed, rspeed)
+	evaluate(action, currstate, distwas, robot.lookahead(), lspeed, rspeed, robot.isstuck())   // robot.detectObject(20, 0), lspeed+rspeed)
+	redrawEnvironment(robot.ctx)
+  }
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function showProbs(wProb) {
+  var wProbBase = wProb * 4
+  var pstr = Probs[wProbBase].toString()
+  for (var ct = 1; ct < 4; ct++) pstr = pstr + " : " + Probs[wProbBase+ct].toString()
+   switch(wProb) {
+	       case 0 : document.controlsys.probs0.value = pstr
+					break
+	       case 1 : document.controlsys.probs1.value = pstr
+					break
+	       case 2 : document.controlsys.probs2.value = pstr
+					break
+	       case 3 : document.controlsys.probs3.value = pstr
+					break
+   }
+ }
+ 
+function setchecked(resWhich) {
+var ct
+	if (resWhich == 0) {
+		for (ct = 0; ct < 16; ct++) Probs[ct] = 25
+		for (ct = 0; ct < 4; ct++) showProbs(ct)
+	}
+	else {
+		for (ct = resWhich*4-4; ct<resWhich*4; ct++) Probs[ct] = 25
+		showProbs(resWhich-1)
+	}
+}	
+
+function startstop() {
+	active = !active
+	document.getElementById("StopCheck").value="Press to "+(active ? "Stop" : "Start");
+
+}
+	
+function load() {
+	active = false
+    window.defaultStatus="RJM's Simple Robot Learner";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(canvas.width * 0.3, canvas.height * 0.4, 10, ctx)
+	addMouseDown(canvas)
+	document.getElementById("Env").checked = true
+	addKeySpecial() 
+	
+	setGrayBack()
+	
+	oneRobot = true
+
+    handleResize();
+	
+	setRobotTimer()
+	setchecked(0)
+	active = false
+}
+
+function handleResize(evt) {
+  var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+function checkEnvironment() {
+    var canvas = document.getElementById("myCanvasSYS");
+	if (document.getElementById("Env").checked) basicEnvironment(canvas.width, canvas.height)
+	else advancedEnvironment(canvas.width, canvas.height)
+}	
+	
+function checkBoth() {
+var bool = document.getElementById("CBoth").checked
+	
+}	
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Learning Robot</h1>
+				<p>The aim here is for the robot to learn how to move round its environment avoiding walls.</p>
+				<p>The robot has four built in instincts: go forward, turn right, turn left or go back.
+				There is a probability of choosing a particular action: initially all are equally possible.
+				The robot decides which of four states it is in, and then chooses one of four actions.
+				If a chosen action is good, its probability is increased, otherwise it is decreased.
+				The figures show the probabilities of choosing each action in each state.</p>
+				<p>Click on the screen to reposition robot - if it gets stuck.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press I, J, K or M to move robot up, left, right or down.</p>
+				<p>Press A N L R B to reset probabilities for All, No Wall, Wall on Left, etc.</p>
+				<p>Press S to start/stop; E to toggle environment and U for toggle if use Both situation</p>
+
+		</div>
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="StopCheck" value="Press to Stop" onclick="startstop();"></p>
+				<p>When No Wall is seen :</p>
+				<p>When Wall on Left only:</p>
+				<p>When Wall on Right only :</p>
+				<p>When Wall near Both sensors : </p>
+				<p>Reset Probabilities</p><p>
+				</p><p>
+					<input type="button" id="resetAll" value="All" onclick="setchecked(0);">
+					<input type="button" id="resetNone" value="No" onclick="setchecked(1);">
+					<input type="button" id="resetLeft" value="Left" onclick="setchecked(2);">
+					<input type="button" id="resetRight" value="Right" onclick="setchecked(3);">
+					<input type="button" id="resetBoth" value="Both" onclick="setchecked(4);">
+				</p>
+				</div>
+				<div class="right">
+				<p>FF FB BF BB Probabilities</p>
+				<p><input type="text" name="probs0" size="12" value="94 : 2 : 2 : 2"></p>
+				<p><input type="text" name="probs1" size="12" value="25 : 25 : 25 : 25"></p>
+				<p><input type="text" name="probs2" size="12" value="25 : 25 : 25 : 25"></p>
+				<p><input type="text" name="probs3" size="12" value="25 : 25 : 25 : 25"></p>
+				<p>Simple Environment<input type="checkbox" id="Env" checked="checked" onchange="checkEnvironment()"></p> 
+				<p>Use 'Both' state <input type="checkbox" id="CBoth" checked="checked" onchange="checkBoth()"></p>
+				</div>	
+			</form>
+
+		</div>
+		
+	<div id="footer">
+		<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robotLearn_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+ </div>
+ 
+
+		
+</body></html>

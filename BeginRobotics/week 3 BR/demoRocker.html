@@ -1,0 +1,223 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoRocker_files/drawEric.js"></script>
+
+<link rel="stylesheet" type="text/css" href="demoRocker_files/style.css">
+
+<script language="JavaScript">
+
+// (c) Professor Richard Mitchell 2015
+
+<!-- Begin
+
+ var simtime = 20
+ var speed = 25
+ var angle = 0
+ var boardAngle = 0
+ var impSize = 0
+ var boardtime = 1000
+ var dirn = 1
+ var keySpecial = 0
+
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 85 : 
+		case 117 :		// U = Up
+					setPulse(1)
+					break	
+		case 68 :     // D = Dn
+		case 100 :
+					setPulse(-1)
+					break
+		case 82 :     // R = Reverse wires
+		case 114 :
+					document.getElementById("MotorDirn").checked = !document.getElementById("MotorDirn").checked
+					reverseMotor()
+					break
+		case 83 :     // S = toggle slope
+		case 115 :
+					document.getElementById("onSlope").checked = !document.getElementById("onSlope").checked
+					toggleSlope()
+					break
+		case 67 :     // C =  control
+		case 99 :
+					document.getElementById("tiltControl").checked = !document.getElementById("tiltControl").checked
+					toggleControl()
+					break
+		case 86 :     // V = toggle 2D/3D view
+		case 118 :
+					document.getElementById("View3D").checked = !document.getElementById("View3D").checked
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function doMotor() {
+	checkKeySpecial()
+	
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+
+	if (document.getElementById("View3D").checked) {
+		clearCanvas(ctx, cw, ch, [canvasback, canvasbacklighter, canvasbackdarker], ch*60)
+		if (document.getElementById("onSlope").checked) {
+			ctx.fillStyle = canvasbackdarker
+			putPoints(ctx, [cw*20, ch*75, cw*75, ch*85, cw*85, ch*45, cw*40, ch*45], true)
+		}	
+	}		
+	else {
+		clearCanvas(ctx, cw, ch, [canvasback], 0)
+
+		ctx.strokeStyle = "black"
+		ctx.lineWidth = 2
+		if (document.getElementById("onSlope").checked) {
+			var xt = cw*50+ch*30*Math.sin(Math.PI/6)
+			var yt = ch*45+ch*30*Math.cos(Math.PI/6)
+			putPoints(ctx, [xt-cw*25, yt+cw*25*0.5, xt+cw*35, yt-cw*35*0.5], false)
+		}
+		else putPoints (ctx, [0, ch*75, cw*100, ch*75]	)
+	}
+
+	boardtime++
+	
+	if (document.getElementById("tiltControl").checked) boardAngle = impSize*Math.exp(-boardtime/4)*Math.sin(boardtime/2)
+	else 	boardAngle = impSize*Math.exp(-boardtime/20)*Math.sin(boardtime/2)
+
+	if (Math.abs(boardAngle)<Math.PI/120) boardAngle = 0
+	
+	if (document.getElementById("View3D").checked) 
+		drawEric (ctx, cw, ch, cw*50, ch*45, -30, boardAngle, [angle, angle], 0)
+	else
+		drawEric (ctx, cw, ch, cw*50, ch*45, 90, boardAngle, angle, 1)
+
+	angle = angle + dirn*speed*Math.PI/1600
+}
+	
+function setMotorTimer() {
+	setInterval(function(){doMotor()},simtime);
+}
+
+function setImpulse (dspeed) {
+	impSize = dspeed * dirn 
+	boardtime = 0
+}	
+
+function reverseMotor() {
+	dirn = -dirn
+   setImpulse (speed/100)
+}   
+
+function setPulse (ds) {
+ 	speed = speed + ds*10
+	if (speed > 100) speed = 100
+	else if (speed<=0) speed = 0
+	else setImpulse (ds/5)
+} 	
+
+function toggleSlope() {
+	setImpulse (speed/200)
+}
+
+function toggleControl() {
+// does not do anything
+}
+
+function load() {
+    window.defaultStatus="RJM's Rocking Motion Demo";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	document.getElementById("onSlope").checked=false
+	document.getElementById("tiltControl").checked=false
+	document.getElementById("View3D").checked=true
+	dirn = 1
+	
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+
+    handleResize();
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas
+	
+	setMotorTimer()
+	active = true
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   canvas.setAttribute('width', robotWrapper.clientWidth - 100);
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Control and Rocking</h1>
+				
+				<p>The ERIC robot has two wheels but no caster wheel, so when it changes velocity the circuit board, motor
+				and battery pack produce a rocking motion, which can be reduced with simple control.</p>
+				<p>The animation shows the robot. You can increase or decrease the speed, reverse 
+				direction, or set the robot on to a slope: all these velocity changes cause rocking.</p>
+				<p>See what happens when you change speed. Note the difference when you reverse direction at faster speeds.
+				See also what happens when the robot goes on or off the slope.</p>
+				<p>Turn control On and investigate the difference.</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>Press U and D to speed up or down, R to reverse motor, S to toggle whether on slope,  
+				 C to toggle whether Control is used, and V to toggle 3D/2D view. </p>
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="MotorDirn" value="Reverse Motor" onclick="reverseMotor();"></p>
+				<p><input type="button" id="SpeedUp" value="Speed Up" onclick="setPulse(1);"></p>
+				<p><input type="button" id="SlowIt" value="Slow Down" onclick="setPulse(-1);"></p>
+				</div>
+				<div class="right">
+				<p>On Slope<input type="checkbox" id="onSlope" checked="checked" onchange="toggleSlope()"></p>
+				<p>With Control<input type="checkbox" id="tiltControl" onchange="toggleControl()"></p>
+				<p>View in 3D<input type="checkbox" id="View3D" value="Show In 3D" checked="checked"></p>
+				</div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoRocker_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+</body></html>

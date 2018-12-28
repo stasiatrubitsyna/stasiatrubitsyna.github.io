@@ -1,0 +1,528 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+
+<script type="text/javascript" src="demoSpeedControl_files/BoxLib.js"></script>
+<script type="text/javascript" src="demoSpeedControl_files/GraphLib.js"></script>
+<script type="text/javascript" src="demoSpeedControl_files/RobotKeyLib.js"></script>
+
+<link rel="stylesheet" type="text/css" href="demoSpeedControl_files/style.css">
+
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 0
+ var simVar
+ 
+ var robot
+ var robotHCount = 0
+ var robotTrav = 0
+ var active = false
+ //var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+ var tarray, sarray
+ var graphShown = false
+ var inBoxIds = ["whichhill", "robotspeed"]
+ var speeds = [0, 24]
+ var userfac = 0
+ var speedo = 0
+ 
+ var hills0 = [20, 0, 1,  30, 8, 1, 	15, 0, 1, 30, -8, 1]			
+ var hills1 = [10, 0, 1,  10, 5, 1,  6, 5, 1,  3, 1, 0, 1, 0, 1,  8, -5, 1,  10, -4, 1,  7, -1, 1,  
+              15, 0, 2,  6, 4, 2,  5, 3, 2,  4, 0, 2,  9, -8, 2,  12, 0, 2]
+ var hills2 = [10, 0, 1,  10, 3, 1,  10, 7, 1,  10, 9, 1,  10, 5, 1,  10, 0, 1,  10, -3, 1,  10, -7, 1,  
+               10, -5, 1,  10, -2, 1,  8, 0, 1]
+ var hills3 = [10, 0, 2,  10, 3, 2,  10, 7, 2,  10, 9, 2,  10, 5, 2,  10, 0, 2,  10, -3, 2,  10, -7, 2,  
+               10, -5, 2,  10, -2, 2,  8, 0, 2]
+ var hills4 = [10, 0, 1,   10, 4, 1,  10, 9, 1,   5, 0, 1, 15, -10, 1,  10, -5, -1,  5, -3, 1, 5, 0, 1, 10, 3, 1,
+                5, 4, 2, 10, 2, 3, 10, 0, 3]
+ var hills 
+ 
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+//var isInComm = document.activeElement.name=="commandList"
+var isInComm = false
+	switch (keySpecial) {
+		case 76 :		// 'l' or 'L' means set landscape
+		case 108 :  focusOn(0)	
+					break
+		case 73 :       // I    means focus on Input
+		case 105 :  focusOn(1)
+					break
+		case 89 :       // Y y   means you control
+		case 121 :  checkStr()
+					checkCLControl(1)	
+					break
+		case 83 :		// S  means simple control
+		case 115 :  checkStr()
+					checkCLControl(2)	
+					break
+		case 82 :		// R  means  restart run
+		case 114 :  checkStr()
+					startRobot(true)
+					break
+		case 71 :		// G  means redraw graph ... same as E
+		case 103 :  	
+		case 69 :		// E means  restart explain
+		case 101:   checkStr()
+					doExplain()
+					break
+		case 78 :		// N  means no control
+		case 110 :  checkStr()
+					checkCLControl(0)
+					break
+		case 65 :		// A  means advanced control
+		case 97 :   checkStr()
+					checkCLControl(4)
+					break
+		case 66 :		// B  means better control
+		case 98 :   checkStr()
+					checkCLControl(3)
+					break
+		case 68 :				// D decrease speed
+		case 100 :	checkStr()	
+					userfac--
+					break
+		case 85 :				// U increase speed
+		case 117 :	checkStr()	
+					userfac++
+					break
+		case 87 :       // W w   means toggle slow simulation
+		case 119 :  checkStr()
+					document.getElementById("SlowSimulation").checked = !document.getElementById("SlowSimulation").checked	
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+ function drawLine (ctx, x1, y1, x2, y2) {
+   ctx.beginPath()
+   ctx.moveTo(x1, y1)
+   ctx.lineTo(x2, y2)
+   ctx.stroke()
+}
+
+function aRobot (x, y, sz, ctx, cw, ch) {
+this.robotx = x
+this.roboty = y
+this.robotsz = sz
+this.ctx = ctx
+this.cw = cw
+this.ch = ch
+this.dx = 1
+this.dy = 0
+this.robotDraw = robotDraw
+  function robotDraw(show) {
+    ctx.lineWidth = (show) ? 2 : 3;
+	ctx.strokeStyle = (show) ? "DarkGreen" : canvasback
+	var lsz = (show) ? 1.2 : 1.3
+	drawLine(this.ctx, this.robotx-this.dx*this.robotsz*lsz, this.roboty-this.dy*this.robotsz*lsz, 
+	         this.robotx+this.dx*this.robotsz*lsz,  this.roboty+this.dy*this.robotsz*lsz)
+	
+	ctx.fillStyle = (show) ? "Purple" : canvasback
+	dsz = (show) ? this.robotsz : this.robotsz+1
+	ctx.beginPath();
+	ctx.arc(this.robotx,this.roboty,dsz,0,2*Math.PI);
+	ctx.fill()
+	ctx.fillStyle = (show) ? "black" : canvasback
+  } 
+}
+
+function drawHill (ctx, x1, y1, x2, y2, ybase) {
+   ctx.beginPath()
+   ctx.moveTo(x1, y1)
+   ctx.lineTo(x2, y2)
+   ctx.lineTo(x2, ybase)
+   ctx.lineTo(x1, ybase)
+   ctx.closePath()
+   ctx.fillStyle="green"
+   ctx.fill()
+   
+   ctx.beginPath()
+   ctx.moveTo(x1, y1)
+   ctx.lineTo(x2, y2)
+   ctx.stroke()
+}
+
+function drawHills() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+robot.cw = cw
+robot.ch = ch
+var x = 3*cw;
+var y = 70*ch;
+var nx, ny
+var wh = speeds[0]				// parseInt(document.controlsys.whichhill.value)
+if (wh==2) hills = hills2
+else if (wh==3) hills = hills3
+else if (wh==4) hills = hills4
+else if (wh==0) hills = hills0
+else hills = hills1
+
+	robot.robotx = x;
+	robot.roboty = y-robot.robotsz-4*ch;
+	robotHCount = 0
+	robotTrav = 0;
+	robot.dx = 1
+	robot.dy = 0
+for (var ct = 0; ct < hills.length; ct+=3) {
+	nx = x + Math.sqrt(hills[ct]*hills[ct] - hills[ct+1]*hills[ct+1])*cw
+	ny = y - hills[ct+1]*ch*2
+	ctx.lineWidth = 2*hills[ct+2]
+	drawHill(ctx, x, y, nx, ny, 90*ch);
+	x = nx
+	y = ny
+}
+	robot.robotDraw(true)
+	active = true
+}	
+	
+	
+//   function to draw environment
+
+function drawEnvironment() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	active = false
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.strokeStyle = "black"
+	ctx.beginPath()
+    ctx.rect(0, 0, canvas.width, canvas.height);
+	ctx.stroke()
+
+	ctx.font = '14pt Calibri';
+ }
+
+function moveRobot() {
+var MotorGain = 8
+var WeightConst = 2  // 6
+  var nControl = document.getElementById("NoControl").checked
+  var sControl = document.getElementById("SimpControl").checked
+  var aControl = document.getElementById("AdvControl").checked
+  var bControl = document.getElementById("BetterControl").checked
+  var uControl = document.getElementById("YouControl").checked
+  var CGain = (sControl) ? 72 : 792
+  checkKeySpecial()
+  checkStrings()
+  
+  if (active) {
+	var rs = speeds[1]
+	if (nControl || uControl) {
+		if (uControl) rs = rs + userfac/2				// add user control
+		rs = rs / MotorGain + robot.dy * WeightConst	// model motor and effect of weight
+		rs = rs * (1 - hills[robotHCount+2]/5)		// take into account friction prop to speed
+		if (rs < 0) rs = 0
+	}
+	else if (sControl || bControl) {
+		var fbfac = 1 + CGain / MotorGain + hills[robotHCount+2]/5
+		rs = (rs * CGain / MotorGain + robot.dy * WeightConst) / fbfac
+	}
+	
+	robot.robotDraw(false)
+	if (uControl) showSpeedo(false)
+	robotTrav = robotTrav + rs / 10;
+    robot.robotx = robot.robotx + (rs/10) * robot.cw * robot.dx
+    robot.roboty = robot.roboty + (rs/10) * robot.ch * robot.dy * 2
+	if (robotTrav > hills[robotHCount]) {
+	    robotHCount = robotHCount+3
+		robotTrav = 0
+		if (robotHCount >= hills.length) {
+			active = false
+			drawGraph()
+			document.getElementById("explainRobot").style.visibility= "visible"
+		}
+		else {
+		    robot.dx = Math.sqrt(hills[robotHCount]*hills[robotHCount]-hills[robotHCount+1]*hills[robotHCount+1] ) / hills[robotHCount]
+			robot.dy = -hills[robotHCount+1] / hills[robotHCount]
+		}
+	}
+	tarray.push(tarray[tarray.length-1]+simtime)
+	sarray.push(rs)
+    if (active) {
+		robot.robotDraw(true)
+		speedo = rs
+		if (uControl) showSpeedo(true)
+	}	
+  }
+}   
+
+function drawGraph() {			
+var canvas = document.getElementById("myCanvasSpeed");
+var ctx=canvas.getContext("2d");
+	ctx.fillStyle = canvasback;
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	SpeedGraph.xsmin = canvas.width*0.1
+	SpeedGraph.xsmax = canvas.width*0.85
+	ctx.font = '14pt Calibri';
+	SpeedGraph.plottworesponse(tarray, sarray, sarray, false, 0, 0, "", "speed", "time")
+	graphShown = true
+	document.getElementById("explainRobot").value="Explain Robot"
+	var expectedVal = speeds[1]
+	if (document.getElementById("NoControl").checked || document.getElementById("YouControl").checked) expectedVal /= 8
+	var abserr = 0
+	for (var ct=1; ct<tarray.length; ct++) abserr += Math.abs(sarray[ct]-expectedVal) / expectedVal
+	expectedval = 100 * abserr / sarray.length
+
+	ctx.fillText("%error = "+expectedval.toFixed(2), canvas.width*0.4, canvas.height*0.85)
+}
+
+function showSpeedo(showit) {
+var canvas = document.getElementById("myCanvasSpeed");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 80;   // was 100
+	ctx.lineWidth = (showit) ? 2 : 4
+	var scol = (showit) ? "black" : canvasback
+	var errAngle = Math.PI*(1 - 4*speedo/(speeds[1]) )
+	ctx.strokeStyle = scol
+	drawLine (ctx, cw*70, ch*70, cw*70+ch*60*Math.cos(errAngle), ch*70-ch*60*Math.sin(errAngle))
+}
+
+function setupSpeedo() {
+var canvas = document.getElementById("myCanvasSpeed");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 80;   // was 100
+	ctx.fillStyle = canvasback;
+	ctx.fillRect(0, 0, canvas.width, canvas.height);
+	ctx.font = '14pt Calibri';
+		
+	ctx.fillStyle = "black"
+	drawText(ctx, "Speedometer Vertical if right speed", "middle", "center", cw*150, ch*20)
+	drawText(ctx, "Press U to speed up", "middle", "center", cw*17, ch*40)		
+	drawText(ctx, "Press D to slow down", "middle", "center", cw*17, ch*60)
+	
+	ctx.strokeStyle="red"
+	ctx.beginPath()
+	ctx.arc(cw*70, ch*70, ch*65, 13*Math.PI/12, 23*Math.PI/12) 
+	ctx.stroke()
+	
+	for (var ct=14; ct<23; ct+=2) {
+		var lAngle = ct*Math.PI/12
+		drawLine(ctx, cw*70+ch*65*Math.cos(lAngle), ch*70+ch*65*Math.sin(lAngle), cw*70+ch*63*Math.cos(lAngle), ch*70+ch*63*Math.sin(lAngle))
+	}
+}
+
+
+function explainSys() {
+var canvas = document.getElementById("myCanvasSpeed");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 80;   // was 100
+var ymain = ch*30
+var xfb, yfb, xpos
+var rs = parseInt(document.controlsys.robotspeed.value)
+
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.strokeStyle = "black"
+	ctx.font = '12pt Calibri';
+
+  var sControl = document.getElementById("SimpControl").checked
+  var aControl = document.getElementById("AdvControl").checked
+  var bControl = document.getElementById("BetterControl").checked
+  var nControl = document.getElementById("NoControl").checked
+  var yControl = document.getElementById("YouControl").checked
+  
+	xpos = (nControl) ? cw*35 : (yControl) ? cw*25 : cw * 10
+	if (sControl || bControl || aControl) {
+		xpos = arrowstr(ctx, xpos, ymain, 30*ch, 1, "Des Speed")
+		xfb = xpos + 10*ch
+		xpos = sumarrow (ctx, xpos, ymain, 20*ch, 10*ch, "+- ", "", "Error")
+		xpos = LabeledBox (ctx, xpos, ymain, 20*ch, (sControl) ? " C = 72 " : (bControl) ? "C=792" : " P + I ")
+    }
+	else if (yControl) {
+		xfb = xpos + 18*ch
+		xpos = LabeledBox (ctx, xpos, ymain, 20*ch, "Human")
+	}
+	xpos = arrowstr(ctx, xpos, ymain, 25*ch, 1, "Vin")
+	xpos = LabeledBox (ctx, xpos, ymain, 20*ch, " 0.125 ")
+	xpos = arrowstr(ctx, xpos, ymain, 10*ch, 1, "")
+	xpos = sumarrow (ctx, xpos, ymain, 30*ch, 10*ch, "+ -", "Friction+Weight", "Speed")
+	
+	if (nControl) {	
+		drawText (ctx, "So speed is 0.125 * Vin - Load (ie Friction and Weight)", "middle", "center", cw*50, ch*65)
+		drawText (ctx, "So max speed about "+rs.toString()+"/8 = "+(rs/8).toString(), "middle", "center", cw*50, ch*75)
+	}
+	else {
+		drawfbloop (ctx, xpos-15*ch, ymain, xfb, ymain+10*ch, ymain+20*ch)
+		if (yControl) {
+			drawText (ctx, "Human adjusts Vin based on Speedometer", "middle", "center", cw*45, ch*65)
+		}
+		else if (sControl || bControl) {
+			var CG = (sControl) ? "72" : "792"
+			var DS1 = (sControl) ? "9/10" : "99/100"
+			var DS2 = (sControl) ? "10" : "100"
+			drawText (ctx, "Speed is Desired Speed* "+CG+"*0.125/(1+"+CG+"/0.125)- Load/(1+"+CG+"/0.125)", "middle", "center", cw*50, ch*65)
+			drawText (ctx, "ie Desired Speed * "+DS1+" - Load/"+DS2, "middle", "center", cw*50, ch*75)
+		}
+		else {
+			drawText(ctx, "P+I controller means Vin constant only if Error = 0", "middle", "center", cw*50, ch*65)
+			drawText(ctx, "So Speed = Desired Speed and hence load has no effect", "middle", "center", cw*50, ch*75)
+		}	
+	}
+	graphShown = false
+	document.getElementById("explainRobot").value= "Redraw Graph"
+
+}
+
+function doExplain() {
+	if (graphShown) {
+		explainSys() 
+	}	  
+	else {
+		drawGraph()
+	}	
+}
+
+function setRobotTimer() {
+    if (simtime>0) clearInterval(simVar)
+	simtime = (document.getElementById("SlowSimulation").checked) ? 50 : 25
+	simVar = setInterval(function(){moveRobot()},simtime);
+}
+
+function checkCLControl(val) {
+document.getElementById("AdvControl").checked = (val == 4)
+document.getElementById("BetterControl").checked = (val == 3)
+document.getElementById("SimpControl").checked = (val == 2)
+document.getElementById("YouControl").checked = (val == 1)
+document.getElementById("NoControl").checked = (val == 0)
+var str = (val > 1) ? "Input: Desired Speed "  : "Input: Voltage to Motor "  
+	document.getElementById("commStr").innerHTML = str
+}
+	
+function startRobot(setActive) {	
+    drawEnvironment();
+	drawHills();
+	tarray = [0]
+	sarray = [0]
+	userfac = 0
+	document.getElementById("explainRobot").style.visibility= "hidden"
+	if (document.getElementById("YouControl").checked) {
+		setupSpeedo()
+		speedo = speeds[1]/8
+		showSpeedo(true)
+	}	
+	setRobotTimer()
+	active = setActive
+}
+
+function load() {
+    window.defaultStatus="RJM's Simple Robot System";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(20, 90, 8, ctx, canvas.width/100, canvas.height/100)
+	SpeedGraph = new myjsGraph(document.getElementById("myCanvasSpeed"), 10, 20, 75, 50, true, true, canvasback, "12pt Calibri")
+	checkCLControl(0)
+	addKeySpecial()
+	document.getElementById("SlowSimulation").checked = false
+    handleResize();
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100
+   canvas.setAttribute('width', newWidth);
+   var newHeight = (newWidth>600) ? 300 : newWidth*0.5
+   canvas.setAttribute('height', newHeight);
+   var canvas2  = document.getElementById("myCanvasSpeed")
+   canvas2.setAttribute('width', newWidth);
+ 	startRobot(false)
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Moving on Different Surfaces </h1>
+				
+				<p> Friction slows the Robot, and the steeper the slope, the more the robot's weight slows it down.
+				This demonstration shows the robot moving at different speeds because of such surfaces.</p>
+				<p>You can run the robot with no control, specifying the voltage applied to the motors, 
+				which should be 8 times the speed you want (by default this is 24 for a speed of 3). 
+				You will see that the robot's speed is affected by friction and hills.</p>
+				<p>You can try to control the speed - watch the speedometer and press U or D to speed up or slow down.
+				(To help I suggest you select the slow simulation option)</p>
+				<p>You can use simple speed control, you specify the desired speed and should see 
+				the speed is close to it and less affected by the friction and surface slope.</p>
+				<p>You can use better control: here the controller gain is bigger, so the speed is 
+				nearer to the desired speed. </p>
+				<p>You can use advanced control: then there is no noticeable change in speed. </p>
+				<p>After a run, you will see a graph showing how the actual speed varies with time. 
+				You can then press Explain Robot to see the block diagram model of the system.</p>
+				<p>By default there is a simple 'landscape', but you can try some others as well.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press L so can specify landscape; I so can enter input speed/voltage</p> 
+				<p>N, Y, S, B, A select the control scheme : none, you, simple, better, advanced. 
+				In 'You' control mode, U speeds up and D slows down the motor.</p>
+				<p>R restarts a run; G redraws graph; E to explains the result, W to slow simulation. </p>
+
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<canvas id="myCanvasSpeed" name="myCanvasSpeed" width="772" height="150"></canvas>
+				<div class="left">
+				<p>Select Landscape (0..4)<input type="text" id="whichhill" size="4" value="0"></p>
+				<p>Control: 
+				None <input type="checkBox" id="NoControl" onchange="checkCLControl(0)"> 
+				; You<input type="checkBox" id="YouControl" onchange="checkCLControl(1)"></p>
+				<p>
+				Simple<input type="checkBox" id="SimpControl" onchange="checkCLControl(2)" checked="checked">
+				; Better<input type="checkBox" id="BetterControl" onchange="checkCLControl(3)">
+				; Advanced <input type="checkBox" id="AdvControl" onchange="checkCLControl(4)"> </p>
+				</div>
+				<div class="right">
+				<p><label id="commStr">Input: Desired Speed </label><input type="text" id="robotspeed" size="4" value="24"></p>
+				<p>
+				<input type="button" id="MoveRobot" value="Restart Run" onclick="startRobot(true)">
+				<input type="button" style="visibility:hidden" id="explainRobot" value="Explain Run" onclick="doExplain()" <="" p="">
+				</p><p>Slow the Simulation (for You control)<input type="checkBox" id="SlowSimulation"></p>
+				</div>				
+			</form>
+		</div>
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoSpeedControl_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+</body></html>

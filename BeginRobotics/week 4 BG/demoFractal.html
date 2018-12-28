@@ -1,0 +1,493 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta charset="utf-8">
+<script type="text/javascript" src="demoFractal_files/RobotLib.js"></script>
+<link rel="stylesheet" type="text/css" href="demoFractal_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ 
+ var keySpecial = 0
+// var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+ var repmax = 10
+ 
+var spx, spy, sph
+
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 85 : 
+		case 117 :		// U = Up
+					setReplace(1)
+					break	
+		case 68 :     // D = Dn
+		case 100 :
+					setReplace(-1)
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function drawTo(ctx, dx, dy) {
+	spx += dx*sph
+	spy += dy*sph
+	ctx.lineTo(spx, spy)
+}	
+
+function sierpA (ctx, level) {
+  if (level>=0) {
+	sierpA(ctx, level-1)
+	drawTo(ctx, 1, -1)
+	sierpB(ctx, level-1)
+	drawTo(ctx, 2, 0)
+	sierpD(ctx, level-1)
+	drawTo(ctx, 1, 1)
+	sierpA(ctx, level-1)
+  }
+}
+ 
+function sierpB (ctx, level) {
+  if (level>=0) {
+	sierpB(ctx, level-1)
+	drawTo(ctx, -1, -1)
+	sierpC(ctx, level-1)
+	drawTo(ctx, 0, -2)
+	sierpA(ctx, level-1)
+	drawTo(ctx, 1, -1)
+	sierpB(ctx, level-1)
+  }
+}
+ 
+function sierpC (ctx, level) {
+  if (level>=0) {
+	sierpC(ctx, level-1)
+	drawTo(ctx, -1, 1)
+	sierpD(ctx, level-1)
+	drawTo(ctx, -2, 0)
+	sierpB(ctx, level-1)
+	drawTo(ctx, -1, -1)
+	sierpC(ctx, level-1)
+  }
+}
+ 
+function sierpD (ctx, level) {
+  if (level>=0) {
+	sierpD(ctx, level-1)
+	drawTo(ctx, 1, 1)
+	sierpA(ctx, level-1)
+	drawTo(ctx, 0, 2)
+	sierpC(ctx, level-1)
+	drawTo(ctx, -1, 1)
+	sierpD(ctx, level-1)
+  }
+}
+ 
+function drawSierpinski(superimposed) {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+var scols = ["blue", "red", "green", "purple", "cyan","yellow"]
+var cmax, lwmax
+	if (superimposed) {
+		spx = cw*50, spy = ch*75,  sph = ch*25, cmax = numReplace, lwmax = 6
+	}
+	else {
+		spx = cw*20 , spy = ch*37.5,  sph = ch*12.5, cmax = numReplace, lwmax = 5
+	}
+	for (var ct = 0; ct < cmax; ct++) {
+		ctx.strokeStyle = scols[ct]
+		ctx.lineWidth = lwmax-ct
+		spx -= sph;
+		sph = sph /2; 
+		spy += sph
+		ctx.beginPath()
+		ctx.moveTo(spx, spy)
+		sierpA(ctx, ct)
+		drawTo(ctx, 1, -1)
+		sierpB(ctx, ct)
+		drawTo(ctx, -1, -1)
+		sierpC(ctx, ct)
+		drawTo(ctx, -1, 1)
+		sierpD(ctx, ct)
+		drawTo(ctx, 1, 1)
+		ctx.stroke()
+		if (superimposed == false) {
+			if (ct == 0 || ct == 1) spx = spx + cw*30
+			else if (ct == 2 ) spy = spy + ch*50
+			else spx = spx - cw*30
+		}
+	}	
+}
+ 
+function goDrawPythag(ctx, cw, ch, x1, y1, x2, y2, level, regular) {
+	ctx.strokeStyle = (level < numReplace) ? "brown" : "green"
+	ctx.lineWidth = (numReplace + 2 - level)
+	ctx.beginPath()
+	ctx.moveTo(cw*50-ch*50+x1*ch, y1*ch)
+	ctx.lineTo(cw*50-ch*50+x2*ch, y2*ch)
+	ctx.stroke()
+	
+    var xs = x1-x2;
+    var ys = y1-y2;
+    var rfac
+ 	if (level < numReplace) {
+		rfac = fracrand()
+		goDrawPythag(ctx, cw, ch, x2, y2, x2 + (ys/2 - xs/2)*rfac, y2 - (xs/2 + ys/2)*rfac, level+1, regular)
+		rfac = fracrand()
+		if (regular)	goDrawPythag(ctx, cw, ch, x2, y2, x2 - (ys/2 + xs/2)*rfac, y2 + (xs/2 - ys/2)*rfac, level+1, regular)
+		else			goDrawPythag(ctx, cw, ch, x2, y2, x2 - (ys/2 + xs/3)*1.1*rfac, y2 + (xs/2 - ys/3)*1.1*rfac, level+1, regular)
+	}
+ }
+ 
+function drawPythag(regular) {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	goDrawPythag (ctx, cw, ch, 50, 98, 50, 68, 0, regular)
+}
+ 
+function goBlockPythag (ctx, cw, ch, x1, y1, sz, ang, level, regular) {
+ // x1,y1  x2 y2 is base of square
+ var szcos = sz*Math.cos(ang)
+ var szsin = sz*Math.sin(ang)
+ var x2 = x1 + szcos
+ var y2 = y1 - szsin
+ var x3 = x1 - szsin
+ var y3 = y1 - szcos
+ var x4 = x3 + szcos
+ var y4 = y3 - szsin
+ ctx.fillStyle = (level < numReplace) ? "brown" : "green"
+
+ ctx.beginPath()
+ ctx.moveTo(cw*50+x1*ch, y1*ch)
+ ctx.lineTo(cw*50+x2*ch, y2*ch)
+ ctx.lineTo(cw*50+x4*ch, y4*ch)
+ ctx.lineTo(cw*50+x3*ch, y3*ch)
+ ctx.lineTo(cw*50+x1*ch, y1*ch)
+ ctx.fill()
+ 
+ if (level < numReplace) {
+	var dang = fracrand() * ((regular) ? Math.PI/4 : Math.PI/3)
+	var sz1 = sz*Math.cos(dang)
+	var sz2 = sz*Math.sin(dang)
+	var xp = x3+sz1*Math.cos(ang+dang)
+	var yp = y3-sz1*Math.sin(ang+dang)
+  
+	goBlockPythag (ctx, cw, ch, x3, y3, sz1, ang+dang, level+1, regular)
+	goBlockPythag (ctx, cw, ch, xp, yp, sz2, ang+dang-Math.PI/2, level+1, regular)
+ }
+}
+ 
+function blockPythag(regular) {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+var opts = (regular) ? [-12, 24] : [-20, 22]	
+	goBlockPythag (ctx, cw, ch, opts[0], 98, opts[1], 0, 0, regular)
+} 
+ 
+function fracrand() {
+ 	return (document.getElementById("randO").checked ) ? 1 - Math.random()/20 : 1
+}
+ 
+ function putPoints (ctx, data) {
+	ctx.beginPath()
+	for (ct=0; ct<data.length; ct+=2) {
+		if (ct==0) ctx.moveTo(data[ct], data[ct+1])
+		else ctx.lineTo(data[ct], data[ct+1])
+	}
+	ctx.stroke()
+}
+
+function MakeLine(ctx, x1, y1, x2, y2, Generator, Level, inPairs) {
+var doThis = true
+var xp, yp, xn, yn, rfac
+	if (Level>numReplace) {
+		putPoints(ctx, [x1, y1, x2, y2])
+	}
+	else {
+		xp = x1
+		yp = y1
+		for (var ct = 2; ct<Generator.length; ct+=2) {
+			rfac = fracrand()
+			xn = x1 + (x2 - x1) * Generator[ct] * rfac + (y2 - y1) * Generator[ct+1] * rfac
+			yn = y1 + (y2 - y1) * Generator[ct] * rfac - (x2 - x1) * Generator[ct+1] * rfac
+			if (doThis) MakeLine (ctx, xp, yp, xn, yn, Generator, Level+1, inPairs)
+			if (inPairs == false) doThis = !doThis
+			xp = xn
+			yp = yn
+		}
+	}
+}
+
+function drawInGen (ctx, xs, ys, xoff, yoff, ingen, notPairs, col) {
+	ctx.strokeStyle = col
+	ctx.lineWidth = 1
+	if (notPairs) {
+		ctx.beginPath()
+		ctx.moveTo (xoff+ingen[0]*xs, yoff+ingen[1]*ys)
+		for (var ct = 2; ct<ingen.length; ct+=2) ctx.lineTo(xoff+ingen[ct]*xs, yoff+ingen[ct+1]*ys)
+		ctx.stroke()
+	}
+	else {
+		for (var ct = 0; ct<ingen.length; ct+=4) {
+			ctx.beginPath()
+			ctx.moveTo(xoff+ingen[ct]*xs, yoff+ingen[ct+1]*ys)
+			ctx.lineTo(xoff+ingen[ct+2]*xs, yoff+ingen[ct+3]*ys)
+			ctx.stroke()
+		}	
+	}	
+}
+
+function drawFractal(Initiator, Generator, notPairs) {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.strokeStyle = "blue"
+	ctx.lineWidth = 2
+	
+//	putPoints(ctx, Initiator)
+	for (var ct = 0; ct<Initiator.length-2; ct+=2) {
+		MakeLine(ctx, Initiator[ct]*cw, Initiator[ct+1]*ch, Initiator[ct+2]*cw, Initiator[ct+3]*ch, Generator, 1, notPairs)
+	}	
+	
+	drawInGen(ctx, cw/10, ch/10, 0, ch*5, Initiator, true, "red")
+	drawInGen(ctx, cw*8, -ch*10, cw, ch*25, Generator, notPairs, "green")
+	
+}
+
+function fernDot(ctx, cw, ch, x, y) {
+var xs = cw*0.55-ch+y*ch/6
+var ys = ch/2 + ch*x/6
+var sz = 1
+//   ctx.fillRect(xs-sz, ys-sz, sz, sz)
+   ctx.beginPath();
+	ctx.arc(xs, ys, sz, 0, 2 * Math.PI);
+	ctx.fill();
+}
+
+function drawFern() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width;
+var ch = canvas.height;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+	ctx.fillStyle = "green"
+var	x = 0.5, y = 0.5, rval, ndx, xw, yw
+var p = [0.85, 0.92, 0.99, 1]
+    C = [0.85, 0.04, -0.04, 0.85, 0, 1.6,  0.20, -0.26, 0.23, 0.22, 0, 1.60,  -0.15, 0.28, 0.26, 0.24, 0, 0.44, 0, 0, 0, 0.16, 0, 0]
+	for (var ct = 0; ct < numReplace*4000; ct++) {
+		fernDot(ctx, cw, ch, x, y)
+		rval = Math.random()
+		if (rval < p[0]) ndx = 0
+		else if (rval < p[1]) ndx = 6
+		else if (rval < p[2]) ndx = 12
+		else ndx = 18
+		xw = x, yw = y
+		x = xw*C[ndx] + yw*C[ndx+1]+C[ndx+4]
+		y = xw*C[ndx+2] + yw*C[ndx+3] + C[ndx+5]
+	}
+}
+
+function goDrawFractal() {
+	if (document.getElementById("basicF").checked) {
+		drawFractal([10, 70, 90, 70], [0, 0, 0.333, 0, 0.50, 0.333, 0.667, 0, 1, 0], true)
+	}
+	else if (document.getElementById("forestF").checked) {
+		drawFractal([10, 70, 90, 70], [0, 0, 0.33, 0, 0.35, 0.3, 0.36, 0, 1, 0], true)
+	}
+	else if (document.getElementById("kochF").checked) {
+		drawFractal([30, 75, 70, 75, 50, 6, 30, 75], [0, 0, 0.333, 0, 0.50, 0.3, 0.667, 0, 1, 0], true)
+	}
+	else if (document.getElementById("snowF").checked) {
+		drawFractal([30, 75, 70, 75, 50, 6, 30, 75], [0, 0, 0.333, 0, 0.50, -0.3, 0.667, 0, 1, 0], true)
+	}
+	else if (document.getElementById("fernF").checked) {
+		drawFractal([10, 50, 90, 50], [0, 0, 0.5, 0, 0.5, 0, 1, 0, 0.5, 0, 0.85, 0.15, 0.5, 0, 0.85, -0.15], false)
+	}
+	else if (document.getElementById("xF").checked) {
+		drawFractal([10, 50, 90, 50], [0, 0, 0.45, 0, 0.45, 0, 1, 0, 0.45, 0, 0.75, 0.15, 0.45, 0, 0.75, -0.15], false)
+	}
+	else if (document.getElementById("plantF").checked) {
+		drawFractal([10, 70, 90, 70], [0, 0, 0.55, 0, 0.45, 0, 1, 0, 0.5, 0, 0.85, 0.35], false)
+	}
+	else if (document.getElementById("treeF").checked) {
+		drawFractal([50, 95, 50, 5], [0, 0, 0.75, 0, 0.65, 0, 1, 0, 0.6, 0, 0.91, 0.21, 0.7, 0, 0.91, -0.21], false)
+	}
+	else if (document.getElementById("pythagT").checked) {
+		drawPythag(true)
+	}
+	else if (document.getElementById("upythagT").checked) {
+		drawPythag(false)
+	}
+	else if (document.getElementById("fpythagT").checked) {
+		blockPythag(true)
+	}
+	else if (document.getElementById("ufpythagT").checked) {
+		blockPythag(false)
+	}
+	else if (document.getElementById("sierpF").checked) {
+		drawSierpinski(true)
+	}
+	else if (document.getElementById("separF").checked) {
+		drawSierpinski(false)
+	}
+	else if (document.getElementById("fern").checked) {
+		drawFern()
+	}
+	else if (document.getElementById("dragon").checked) {
+		drawFractal([33, 40, 66, 40], [0, 0, 0.5, -0.5, 1, 0, 0.5, -0.5], false)
+	}
+}	
+
+function setReplace (ds) {
+    numReplace += ds
+	if (numReplace<1) numReplace == 1
+	else if (numReplace>repmax) numReplace = repmax
+	
+	goDrawFractal()
+} 	
+
+function setFractal (which) {
+	document.getElementById("basicF").checked = which==0
+	document.getElementById("forestF").checked = which==1
+	document.getElementById("kochF").checked = which==2
+	document.getElementById("snowF").checked = which==3
+	document.getElementById("fernF").checked = which==4
+	document.getElementById("xF").checked = which==5
+	document.getElementById("plantF").checked = which==6
+	document.getElementById("treeF").checked = which==7
+	document.getElementById("pythagT").checked = which==8
+	document.getElementById("upythagT").checked = which==9
+	document.getElementById("fpythagT").checked = which==10
+	document.getElementById("ufpythagT").checked = which==11
+	document.getElementById("fern").checked = which==12
+	document.getElementById("dragon").checked = which==13
+	document.getElementById("sierpF").checked = which==14
+	document.getElementById("separF").checked = which==15
+	
+	if (which<8) repmax = 7
+	else if (which<13)	repmax = 9
+	else if (which==13) repmax = 13
+	else repmax = 6
+	if (numReplace>repmax) numReplace = repmax
+	goDrawFractal()
+}	
+	
+
+function load() {
+    window.defaultStatus="RJM's Fractak Demo";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	numReplace = 1
+	setFractal(0)
+	document.getElementById("randO").checked = false
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas	
+
+	handleResize();
+
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100
+   canvas.setAttribute('width', newWidth);
+    canvas.setAttribute('height', newWidth*0.5);
+	goDrawFractal()
+}
+
+window.addEventListener('resize', handleResize);
+
+// End -->
+</script>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+</head><body onload="load()">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Fractals for Artificial Life </h1>
+				
+				<p>Fractals are entities which are made up of smaller examples of themselves. They can be used to
+				produce realistic looking objects.</p>
+				<p>In some examples each line in a fractal's 'initiator' is replaced by each line in the 'generator'.
+				Thus more lines are produced, each of which is replaced by the generator ... 
+				The initiator and generator are also shown.
+				You control how many times the lines are replaced.</p>
+				<p>The Pythagoras tree (both regular and irregular) is also given: Each branch has two branches added. 
+				The version made of squares is also there.</p>
+				<p>The famous Barnsley Fern is shown : many dots are plotted each calculated from the previous dot's place.</p> 
+				<p>Also shown are Sierpinski space filling curves - made up of four mutually recursive shapes called A, B, C and D.
+				Shape A for instance is A, \, B, _, D, /, A.</p>
+			</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="386"></canvas>
+				<div class="left">
+				<p><input type="button" id="moreReplace" value="More" onclick="setReplace(1);">
+				<input type="button" id="lessReplace" value="Fewer" onclick="setReplace(-1);">&nbsp; Replacements</p>
+
+				<p><input type="checkbox" id="basicF" checked="checked" onchange="setFractal(0)"> Basic
+				<input type="checkbox" id="forestF" onchange="setFractal(1)"> Forest</p>
+				<p><input type="checkbox" id="fernF" onchange="setFractal(4)"> Plant1
+				<input type="checkbox" id="xF" onchange="setFractal(5)"> Plant2</p>
+				<p><input type="checkbox" id="pythagT" onchange="setFractal(8)"> Even
+				<input type="checkbox" id="upythagT" onchange="setFractal(9)"> Uneven Pythagoras Tree</p>
+				<p><input type="checkbox" id="fern" onchange="setFractal(12)"> Fern
+				<input type="checkbox" id="dragon" onchange="setFractal(13)"> Dragon </p>
+				</div>				
+				<div class="right">
+				<p><input type="checkbox" id="randO" onchange="goDrawFractal()"> Randomness
+				<input type="button" id="justDraw" value="Redraw" onclick="setReplace(0);"></p>
+				<p><input type="checkbox" id="kochF" onchange="setFractal(2)"> Koch
+				<input type="checkbox" id="snowF" onchange="setFractal(3)"> SnowFlake</p>
+				<p><input type="checkbox" id="plantF" onchange="setFractal(6)"> Branches
+				<input type="checkbox" id="treeF" onchange="setFractal(7)"> Tree</p>
+				<p><input type="checkbox" id="fpythagT" onchange="setFractal(10)"> Even
+				<input type="checkbox" id="ufpythagT" onchange="setFractal(11)"> Uneven Square Tree</p>
+				<p><input type="checkbox" id="sierpF" onchange="setFractal(14)"> Sierpinski
+				<input type="checkbox" id="separF" onchange="setFractal(15)"> Separated</p>
+		
+				</div>
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoFractal_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+
+</body></html>

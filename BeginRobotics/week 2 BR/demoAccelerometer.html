@@ -1,0 +1,276 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoAccelerometer_files/RobotLib.js"></script>
+<link rel="stylesheet" type="text/css" href="demoAccelerometer_files/style.css">
+
+<script language="JavaScript">
+
+// (c) Prof Richard Mitchell
+// Program to simulate forces detected by accelerometers when phone is rotated
+<!-- Begin
+
+ var simtime = 50
+ 
+ var active = false
+ //var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+var mainAngle = 0							// x,y angle of phone
+ var tiltAngle = 0							// tilt angle of phone
+ var xBase, yBase, Scale					// used for position of phone
+ var pns = ["p1", "p2", "p3", "p4"]			// names of text messages
+ var PIBy2 = Math.PI/2
+ var PIBy4 = PIBy2/2
+ var keySpecial = 0
+
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 76 : 
+		case 108 :		// L = Left
+					movePhone(-1, 0);
+					break	
+		case 82 :     // R = Right
+		case 114 :
+					movePhone(1, 0);
+					break
+		case 70 : 
+		case 101 :		// F = Forward
+					movePhone(0, 1);
+					break	
+		case 66 :     // B = Back
+		case 98 :
+					movePhone(0, -1);
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+
+function reportState (pndx, mess) {
+	// report message mess to string pn   but only if pn string currently empty
+	document.getElementById(pns[pndx]).innerHTML=mess
+}
+
+function putForce (force, mess, ndx) {
+	// print out message about given force
+var m2 = mess.concat(" force = ")
+var fr = Math.round(100*force)/100
+	reportState(ndx, m2.concat(fr.toString()))
+}
+
+function putPoint (ctx, x, y, z, isMT) {
+	// convert x,y,z point to x,y screen value and moveto/lineto
+var xr = x*Math.cos(mainAngle) - y*Math.sin(mainAngle)		// first do main rotation
+var yr = x*Math.sin(mainAngle) + y*Math.cos(mainAngle)
+var xs = xr * (1 + yr*Math.sin(tiltAngle)/50)				// now do tilt angle
+var ys = yr*Math.cos(tiltAngle) - z*Math.sin(tiltAngle)
+	xs = xBase - Scale * xs									// convert to screen coordinates
+	ys = yBase - Scale * ys
+	if (isMT) ctx.moveTo(xs, ys)							// now put to screen canvas ctx
+	else ctx.lineTo(xs, ys)
+}   
+
+function putPoints (ctx, data, isfill) {
+		// data are series of x,y,z points, which are converted to screen coordinates
+		// then these are drawn as lines or filled
+	ctx.beginPath()
+	for (ct=0; ct<data.length; ct+=3) {					// do each x,y,z point
+		putPoint(ctx, data[ct], data[ct+1], data[ct+2], ct==0)
+	}
+	if (isfill) ctx.fill()
+	else ctx.stroke()
+}	
+
+function drawPhone() {
+	// function to draw the phone
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);		// clear background canvas
+
+	xBase = canvas.width/2									// set origin/scale
+	yBase = canvas.height/2
+	Scale = ((yBase<xBase) ? yBase : xBase) / 12
+
+	ctx.font = '14pt Calibri';
+
+    ctx.lineWidth = 2;
+	
+	ctx.fillStyle = "black"
+				// draw phone sides 
+	putPoints(ctx, [-4.5, 10, 1,  4.5, 10, 1, 4.5, 10, -1,  -4.5, 10, -1], true)
+	putPoints(ctx, [4.5, 10, 1, 5, 9.5, 1, 5, 9.5, -1, 4.5, 10, -1], true)
+	putPoints(ctx, [-4.5, 10, 1, -5, 9.5, 1, -5, 9.5, -1, -4.5, 10, -1], true)
+	
+	putPoints(ctx, [5, 9.5, 1,  5, -9.5, 1,  5, -9.5, -1,  5, 9.5, -1], true)
+	
+	putPoints(ctx, [-4.5, -10, 1,  4.5, -10, 1, 4.5, -10, -1,  -4.5, -10, -1], true)
+	putPoints(ctx, [4.5, -10, 1, 5, -9.5, 1, 5, -9.5, -1, 4.5, -10, -1], true)
+	putPoints(ctx, [-4.5, -10, 1, -5, -9.5, 1, -5, -9.5, -1, -4.5, -10, -1], true)
+	
+	putPoints(ctx, [-5, 9.5, 1,  -5, -9.5, 1,  -5, -9.5, -1,  -5, 9.5, -1], true)
+	
+	ctx.fillStyle = "rgb(48, 48, 48)"				// now draw front of phone
+	putPoints(ctx, [4.5, 10, 1, 5, 9.5, 1,  5, -9.5, 1,  4.5, -10, 1,  -4.5, -10, 1, -5, -9.5, 1,  -5, 9.5, 1,  -4.5, 10, 1], true)
+	
+	ctx.fillStyle = "rgb(0, 0, 128)"				// draw  screen on phone
+	putPoints(ctx, [4, 8, 1,  4, -7, 1,  -4, -7, 1,  -4, 8, 1], true)
+	
+	ctx.fillStyle = "silver"						// draw little button
+	putPoints(ctx, [1, -8, 1,  1, -9, 1,  -1, -9, 1,  -1, -8, 1], true)
+	
+			// calculate gravity in x and y directions bearing in mind angles of phone
+var xForce = 3*Math.sin(mainAngle)*Math.cos(tiltAngle)	
+var yForce = 3*Math.cos(mainAngle)*Math.cos(tiltAngle)
+
+	putForce(xForce, "x", 2)			// print out forces
+	putForce(yForce, "y", 3)
+	
+	ctx.fillStyle = "green"				// now print 'ground' depending on angle of phone
+	if (yForce > 0 && yForce > Math.abs(xForce)) {				// portrait mode at bottom
+		putPoints(ctx, [-4, -7, 1,  -4, 4, 1,  4, 4, 1,  4, -7, 1], true)
+	}
+	else if (xForce > 0 && xForce > Math.abs(yForce) ) {		// landscape at bottom
+		putPoints(ctx, [-4, -7, 1,  -4, 8, 1,  2, 8, 1,  2, -7, 1], true)
+	}
+	else if (xForce < 0 && xForce < -Math.abs(yForce) ) {		// landscape at top
+		putPoints(ctx, [-2, -7, 1,  -2, 8, 1,  4, 8, 1,  4, -7, 1], true)
+	}
+	else {														// portrait mode at top
+		putPoints(ctx, [-4, 8, 1,  -4, -3, 1,  4, -3, 1,  4, 8, 1], true)
+	}
+	
+	if (xForce != 0) {									// show amount of x force
+		ctx.lineWidth = 4+2*Math.abs(xForce)
+		ctx.strokeStyle = "red"
+		putPoints(ctx, [0, 0, 1,  -xForce, 0, 1], false)
+	}	
+	
+	if (yForce != 0) {									// and y force
+		ctx.lineWidth = 4+2*Math.abs(yForce)
+		ctx.strokeStyle = "purple"
+		putPoints(ctx, [0, 0, 1,  0, -yForce, 1], false)
+	}	
+}
+
+function showAngle (angle, ndx) {					// report state of tilt/main angle
+var ansdeg = Math.round(angle*180/Math.PI)
+var mess = (ndx == 0) ? "Rotate by " : "Tilt by "
+	reportState (ndx, mess.concat(ansdeg.toString()))
+}
+
+function checkAngle (newAngle, ndx) {					// ensure angle in range -PI..PI
+var ans = newAngle
+	if (ndx == 0) {
+		if (ans < -Math.PI) ans += 2*Math.PI
+		else if (ans > Math.PI) ans -= 2*Math.PI
+	}
+	else {
+		if (ans <-PIBy2) ans = -PIBy2
+		else if (ans > PIBy2) ans = PIBy2
+	}
+	showAngle(ans, ndx)									// and display it
+	return ans
+}
+
+function movePhone (mA, tA) {
+		// rotate phone by mA in main direction and tA in tilt direction
+	mainAngle = checkAngle(mainAngle + mA * Math.PI/12, 0)
+	tiltAngle = checkAngle(tiltAngle + tA * Math.PI/12, 1)
+	drawPhone()		// draw phone in new angle
+}
+
+function load() {
+    window.defaultStatus="RJM's Accelerometer Demo";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+	  checkKeySpecial()
+    }, false);
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas
+    handleResize();					//cope if window resized
+}
+
+function handleResize(evt) {
+		//calculate width of browser
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   canvas.setAttribute('width', robotWrapper.clientWidth - 100);
+		// adjust width of canvas
+
+    drawPhone();			// draw phone 
+	showAngle (0, 0)
+	showAngle (0, 1)
+
+}
+
+window.addEventListener('resize', handleResize);
+ 	
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Accelerometers on Phones </h1>
+				
+				<p>This demo allows you to see what happens when you rotate or tilt a phone.
+				   Its accelerometers detect the gravitational force (force = mass * acceleration).</p>
+				<p>You will see on its screen the forces in two directions, which set landscape or portrait mode.</p>
+				<p>Use the buttons to rotate the phone left/right or tilt forward/backwards.</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>Press L or R to rotate the phone left or right, and F and B to tilt it forward/backward. </p>
+		</div>
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="lButton" value="Rotate Left" onclick="movePhone(-1, 0);"></p>
+				<p><input type="button" id="rButton" value="Rotate Right" onclick="movePhone(1, 0);"></p>
+				<p id="p1">Rotate by 0</p><p id="p3">x force = 0</p>
+				</div>
+				<div class="right">
+				<p><input type="button" id="fButton" value="Tilt Forward" onclick="movePhone(0, 1);"></p>
+				<p><input type="button" id="rButton" value="Tilt Backward" onclick="movePhone(0, -1);"></p>
+				<p id="p2">Tilt by 0</p><p id="p4">y force = 3</p></div>				
+			</form>
+		</div>
+		
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoAccelerometer_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+
+</body></html>

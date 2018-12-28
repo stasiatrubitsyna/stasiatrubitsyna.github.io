@@ -1,0 +1,483 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robot8_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot8_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robot8_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20 //10
+ 
+ var robot
+ var speeds = [2, 100, 5, 5]
+ var wasx=-1, wasy, wasangle, robotMode, moveCount, commListPos = -1, commManyVal
+ var userCommands = []
+ var inBoxIds = ["robotspeed", "forMany", "turnRMany", "turnLMany"]
+
+ 
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+//var isInComm = document.activeElement.name=="commandList"
+var isInComm = false
+	if (keySpecial > 0) {
+		var fitem = document.activeElement
+		isInComm = fitem.name == "commandList"
+	}
+	switch (keySpecial) {
+		case 70 :		// 'f' or 'F' mean focus on wall on left unless in command string
+		case 102 :  if (!isInComm) {
+						checkStr()
+						startRobot(1)
+					}	
+					break
+		case 76 :		// 'l' or 'L' means turn left ... set left mode
+		case 108 :  if (!isInComm) {
+						checkStr()
+						startRobot(3)
+					}	
+					break
+		case 82 :		// R  means  set right mode
+		case 114 :  if (!isInComm) {
+						checkStr()
+						startRobot(2)
+					}	
+					break
+		case 68 :		// D  means focus on speed mode
+		case 100 :  focusOn(0)	
+					break
+		case 71 :		// G  means focus on forward distance/time 
+		case 103 :  focusOn(1)	
+					break
+		case 83 :		// S  means focus on left angle/time
+		case 115 :  focusOn(2)	
+					break
+		case 77 :		// M  means focus on right angle/time
+		case 109 :  focusOn(3)	
+					break
+		case 90 :		// Z  means move to start position
+		case 122 :  checkStr()
+					restartRobot(true)	
+					break
+		case 88 :		// X  means move to previous position
+		case 120 :  checkStr()
+					restartRobot(true)	
+					break
+		case 73 :       // I    means toggle the iterations/distance
+		case 105 :  checkStr()
+					document.getElementById("timeNotDist").checked = !document.getElementById("timeNotDist").checked
+					break
+		case 87 :       // W    means toggle the control option
+		case 119 :  checkStr()
+					document.getElementById("withControl").checked = !document.getElementById("withControl").checked
+					break
+		case 67 :		// 'c' or 'C' mean focus on on command string
+		case 99 :   checkStr()
+					document.controlsys.commandList.focus(); 	
+					break
+		case 79 :		// 'o' or 'O' means obey
+		case 111 :  checkStr()
+					startCommand()
+					break
+		case 80 :		// 'p' or 'P' means path
+		case 112 :  checkStr()
+					checkEnv(0)
+					break
+		case 84 :		// 't' or 'T' means track
+		case 116 :  checkStr()
+					checkEnv(1)
+					break
+		case 72 :		// 'h' or 'H' means Hill track
+		case 104 :  checkStr()
+					checkEnv(2)
+					break
+		default :	if (keySpecial >= 65 && keySpecial <= 123) checkStr()			
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function howFarGone() {
+var soFar
+	if (robotMode == 0) {
+		soFar = 0
+	}
+	else if (robotMode == 1) {
+		soFar = Math.sqrt(Math.pow(robot.robotx - wasx, 2) + Math.pow(robot.roboty - wasy, 2))
+	}
+	else if (robotMode == 2) {
+		var newangle = robot.angle;
+		if (newangle < wasangle) newangle = newangle + 2*Math.PI
+		soFar = newangle-wasangle
+	}
+	else if (robotMode == 3) {
+		var newangle = robot.angle;
+		if (newangle > wasangle) newangle = newangle - 2*Math.PI
+		soFar = wasangle - newangle
+	}
+	else {
+		soFar = moveCount
+	}
+	return soFar
+}
+
+function checkIfDone() {
+var soFar = howFarGone()
+	if (robotMode == 0) {
+		if (commListPos<0 || Math.abs(robot.lspeed) > 0.05 || Math.abs(robot.rspeed) > 0.05) robotMode = 0   // wait til stops
+		else if (commListPos < userCommands.length) startRobotInComm()
+		else {
+			commMessage("Done", true)
+			commListPos = -1
+		}	
+	}	
+	else if (robotMode == 1) {
+		if (soFar > commManyVal) robotMode = 0
+	}
+	else if (robotMode == 2 || robotMode == 3) {
+		if ( soFar >= commManyVal*Math.PI/180) {
+			if (document.getElementById("withControl").checked) {
+				var rsfac = (robotMode == 2) ? 1 : -1
+				robot.angle = wasangle + rsfac * commManyVal*Math.PI/180
+				robot.lspeed = 0
+				robot.rspeed = 0.001
+			}	
+			robotMode = 0
+		}	
+	}
+	else {
+		if (moveCount < commManyVal) moveCount++
+		if (moveCount >= commManyVal) {
+			if (robotMode == 4) robotMess([wasx, wasy, robot.robotx, robot.roboty])
+			else robotMess([wasangle, robot.angle])
+			robotMode = 0
+		}	
+	}	
+}
+
+function robotMess(travdata) {
+var mess = ""
+	if (travdata.length==2) mess = "Turned "+(Math.round(180*(travdata[1]-travdata[0])/Math.PI)).toString()+" degrees"
+	else mess = "Travelled "+Math.round(distance(travdata[0], travdata[1], travdata[2], travdata[3])).toString()+" units"
+	commMessage(mess, true)
+}
+
+function closeToDone() {
+var howClose = 0
+var soFar = howFarGone()
+	if (robotMode == 1) {
+		if (soFar > commManyVal*0.9) howClose = 1
+	}
+	else if (robotMode == 2 ||  robotMode == 3) {
+		if ( soFar > 0.8*commManyVal*Math.PI/180) {
+			howClose = 10
+		}	
+//			else if ( soFar > 0.8*Math.PI/2) howClose = 9
+		else if ( soFar > 0.6*commManyVal*Math.PI/180) howClose = 3
+	}
+	return howClose
+}
+	
+function moveRobot() {
+var speed
+	checkKeySpecial()
+	if (robotMode == 0) {
+		speed = 0
+		commManyVal = 0
+	}	
+	else {	
+		if (commListPos<0) {
+			checkStrings()
+			speed = speeds[0]
+			commManyVal = (robotMode == 0) ? 0 : (robotMode < 4) ? speeds[robotMode] : speeds[robotMode-3]
+		}
+		else {	
+			speed = userCommands[commListPos-2]
+			commManyVal = userCommands[commListPos-1]
+		}	
+	}
+	if (robotMode > 0 || robot.lspeed != 0 || robot.rspeed != 0) {
+		robot.robotDraw(false)
+		if (document.getElementById("withControl").checked) {
+			var howClose = closeToDone()
+			if (howClose>0) {
+				speed = (howClose > 1) ? 1 / howClose :  speed / (howClose+1)
+			}	
+		}	
+		var ldir = (robotMode == 3 || robotMode == 6) ? -1 : 1
+		var rdir = (robotMode == 2 || robotMode == 5) ? -1 : 1
+		robot.moveRobot (ldir*speed, rdir*speed)
+		redrawEnvironment(robot.ctx)						// redraw environment, guide and robot
+		checkIfDone()
+	}
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){moveRobot()},simtime);
+}
+
+function checkControl() {
+//	robot.speedControl = document.getElementById("withControl").checked
+}
+
+function commMessage(mess, canOverwrite) {
+var swas = document.getElementById("p1").innerHTML
+	if (canOverwrite || swas.length==0) document.getElementById("p1").innerHTML=mess
+}
+
+function strToCommands(str) {
+// process a string into a series of robot commands
+// of form F/R/L speed time; etc
+var ct = 0
+var act = -1
+var sct 
+var astr
+var gotdot
+var ok = true
+var wantLetter = true
+if (userCommands.length>0) userCommands.splice(0, userCommands.length)
+	do {							// keep going til end of string
+		while (ct < str.length && (str.charAt(ct) == " " || str.charAt(ct) == ",") ) ct = ct + 1		// skip spaces/comma
+		if (ct < str.length) {												// if not at end of string
+			if (wantLetter) {
+				var commandL = -1
+				if (str.charAt(ct) == 'f' || str.charAt(ct) == 'F') commandL = 0
+				else if (str.charAt(ct) == 'r' || str.charAt(ct) == 'R') commandL = 1
+				else if (str.charAt(ct) == 'l' || str.charAt(ct) == 'L') commandL = 2
+				else commMessage("F L R expected but "+str.charAt(ct)+" found", false)
+				if (commandL >= 0) {
+					wantLetter = false
+					act = act + 1
+					userCommands.push(commandL)
+					ct = ct + 1
+				}	
+				else ok = false
+					
+			}
+			else {
+				astr = ""														// form string with next number
+				act = act + 1
+				sct = 0
+				gotdot = false													// assume integer
+				while (ct < str.length && str.charAt(ct) > " ") {
+					astr = astr + str.charAt(ct)
+					if (str.charAt(ct) == ".") gotdot = true					// . means is float
+					sct = sct + 1
+					ct = ct + 1
+				}
+				userCommands.push ((gotdot)  ? parseFloat(astr) : parseInt(astr))
+				wantLetter = (act % 3 == 2)
+			}	
+		}
+	}
+	while (	ok && ct < str.length )
+	return ok
+}
+
+function startRobotInComm() {
+	if (commListPos>=0 && commListPos < userCommands.length) {
+		var myCstr=["Forward", "Right", "Left"]
+		commMessage ("Doing "+myCstr[userCommands[commListPos]], true)
+		startRobot(userCommands[commListPos]+1)
+		commListPos += 3
+	}
+	else {
+		commListPos = -1
+		robotMode = 0
+	}	
+}
+
+
+function startCommand() {
+	document.getElementById("p1").innerHTML=""
+	if (strToCommands(document.controlsys.commandList.value)) {
+		commMessage("Num Cmds = "+(userCommands.length/3).toString(), false)
+		commListPos = 0
+		startRobotInComm()
+	}	
+}
+	
+function load() {
+    window.defaultStatus="RJM's Simple Robot System";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(canvas.width/5, canvas.height/5, 10, ctx)
+	robot.defineSensors([0, 1, 0])		/// so has forward sensor only
+	oneRobot = true
+	
+	document.getElementById("withControl").checked=false
+	document.getElementById("timeNotDist").checked=true
+	commMessage(".")
+	setGrayBack()
+	addKeySpecial()
+	addMouseDown(canvas)
+	checkSpeedLims = false			// dont limit speeds -40..40
+
+	checkEnv(0)
+	
+	robotMode = -1
+
+    handleResize();
+	restartRobot(true)
+	
+	setRobotTimer()
+	focusOn(0)
+}
+
+function handleResize(evt) {
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+   givePathSize()
+}
+
+window.addEventListener('resize', handleResize);
+
+function restartRobot(toStart) {
+	robotMode = 0
+	robot.robotDraw(false)
+	if (toStart) robot.raceStartPos(true)
+	else if (wasx>=0) {
+		robot.robotx = wasx
+		robot.roboty = wasy
+		robot.angle = wasangle
+	}	
+	robotMode = 0
+	robot.lspeed = 0
+	robot.rspeed = 0
+	redrawEnvironment(robot.ctx)
+}
+
+function startRobot(mode) {
+var sRMess = ["Going Forward", "Turning Right", "Turning Left"]
+	commMessage(sRMess[mode-1], true)
+	wasx = robot.robotx
+	wasy = robot.roboty
+	wasangle = robot.angle
+	moveCount = 0
+	if (document.getElementById("timeNotDist").checked) {
+		robotMode = mode + 3
+		robot.speedControl = document.getElementById("withControl").checked
+	}	
+	else {
+		robotMode = mode
+		robot.speedControl = false
+	}	
+	active = true
+}
+
+function givePathSize() {
+var mess=""
+	if (envOption==0) {
+		var rp = getRectPath()
+		mess = "Rectangle width is "+Math.round(rp[2]).toString()+", height "+rp[3].toString()
+	}	
+	document.getElementById("p2").innerHTML=mess
+}	
+
+function checkEnv (eval) {
+	document.getElementById("envRect").checked = eval==0
+	document.getElementById("envTrack").checked = eval==1
+	document.getElementById("envHillTrack").checked = eval==2
+	envOption = eval
+var canvas = document.getElementById("myCanvasSYS");
+var ctx = canvas.getContext("2d");
+	raceTrack (eval>0, eval > 1, canvas.width, canvas.height)
+	if (eval==0) pathEnvironment (canvas.width, canvas.height)
+	givePathSize()	
+	redrawEnvironment(robot.ctx)
+}
+
+function tNDCheck() {
+}
+	
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Command the Robot</h1>
+				<p>Move the robot Forward, Right or Left, at the specified speed, for the given number of times.</p>
+				<p>You can also set a series of commands like F 10 100 R 5 10 where the robot moves
+				forward at speed 10, 100 times, then turns right at speed 5, 10 times.</p>
+				<p>Initially there is a rectangle to steer around, but a flat or hilled track can be selected.
+				Yopu can put the robot at the start position or return it to its previous position.</p>
+				<p id="p2">Rectangle width is 627, height 200</p>
+				<p>The robot can also move/turn the specified distance / angle. Speed / Position control can also be added.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press F R and L to move the robot forward or turn Right/Left; 
+				   G, S and M to enter the associated time/distance; D the speed.</p>
+				<p>Z puts the robot at the start position, X at the previous position; 
+				   I toggles iteration/distance option; 
+				   C lets you to enter the command string; O instigates the command; W toggles with Control.</p>
+				 <p> P, T and H selects the rectangular path, race track or hilled track</p>  
+					
+		</div>
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>Experiment with different speeds and times and using the Forward button to command
+				the robot to travel from the start position horizontally along the line.</p>
+				<p>Now try to get the robot to turn right through 90 degrees (we suggest a slower speed).</p>
+				<p>On the basis of this, type into the command string the commands to go round the rectangle.</p>
+				<p>Now select a flat track and command the robot to move round it with no control.</p>
+				<p>Select a hill track - does it still work? If not, try adding speed control 
+				(note speed control means that you may need to adjust the time for turning).
+				Can you find a string of commands that work with control on both the flat and hilled track?</p>
+				<p>Optional: Select Distance not iterations, and try to command the robot round the flat track 
+				without control, then with control - and then on the hilled track.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+					<p><input type="button" id="Restart1" value="Move to Start" onclick="restartRobot(true)">
+					   <input type="button" id="Restart2" value="to Previous" onclick="restartRobot(false)"></p>
+					<p>Iterations Not Distance<input type="checkbox" id="timeNotDist" checked="checked" onclick="tNDcheck()"> </p>
+					<p>With Speed/Position Control<input type="checkbox" id="withControl" onclick="checkControl();"></p>
+					<p>Rectangular Path<input type="checkbox" id="envRect" checked="checked" onclick="checkEnv(0);"></p>
+					<p>Flat Track <input type="checkbox" id="envTrack" onclick="checkEnv(1);">
+					   ; Hilled Track<input type="checkbox" id="envHillTrack" onclick="checkEnv(2);">
+					</p>
+					<p><input type="button" id="Forward" value="Obey" onclick="startCommand()">
+					<input type="text" name="commandList" size="70" tabindex="5" value="F 20 100 R 3 25 F 15 80 L 3 15"></p>
+				</div>
+				<div class="right">
+					<p>Robot Speed <input type="text" id="robotspeed" size="3" tabindex="1" value="2"></p>
+					<p> <input type="button" id="Forward" value="Forward " onclick="startRobot(1)">
+						<input type="text" id="forMany" size="3" tabindex="2" value="100"></p>
+					<p> <input type="button" id="TurnRn" value="Turn Right" onclick="startRobot(2)">
+						<input type="text" id="turnRMany" size="3" tabindex="3" value="5"> </p>
+					<p> <input type="button" id="TurnLn" value="Turn Left" onclick="startRobot(3)">
+						<input type="text" id="turnLMany" size="3" tabindex="4" value="5"> </p>
+					<p id="p1">.</p>
+				</div>
+		</form>
+	</div>
+	<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot8_files/uor-reversed.png"></a>	
+	</div>
+
+		<div class=""></div>
+	</div>
+
+    </div>
+
+&gt;</body></html>

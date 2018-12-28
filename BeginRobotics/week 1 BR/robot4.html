@@ -1,0 +1,291 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+	<meta charset="utf-8">
+<!--[if IE]><script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/excanvas.min.js"></script><![endif]-->
+<script type="text/javascript" src="robot4_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot4_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robot4_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+  var simtime = 20										// defines how often robot simulation updated
+ 
+ var robot												// define robot object
+ var active = false										// is robot active?
+ var speeds = [0, 0, 0, 0, 0,  0, 0, 0, 0, 0] 			// default speeds of left and right motors for each movement
+ var inBoxIds = ["robLeftFor", "robLeftLeft", "robLeftRight", "robLeftBack", "robLeftStop", "robRightFor", "robRightLeft", "robRightRight", "robRightBack", "robRightStop"] 
+														// names of input boxes used for speeds
+ var actionNo = 5										// default action number is 5 = stop
+ var raceOn = false										// no race 
+ var raceTime = 0										// used to measure time taken to go round track
+ 
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 68 :		// d or D  means focus on defining speeds ... initially left speed for forward
+		case 100 :   focusOn(0)
+					break
+		case 70 :		// 'f' or 'F' mean go forward .. so set forward mode
+		case 102 :  checkStr()
+					setchecked(1)
+					break
+		case 76 :		// 'l' or 'L' means turn left ... set left mode
+		case 108 :  checkStr()
+					setchecked(2)
+					break
+		case 82 :		// r or R  means  set right mode
+		case 114 :  checkStr()
+					setchecked(3)
+					break
+		case 66 :		// 'b' or 'B' means go Backward ... set back mode
+		case 98 :   checkStr()
+					setchecked(4)
+					break
+		case 83 :       // S    means set stop mode
+		case 115 :
+					checkStr()
+					setchecked(5)
+					break
+		case 87 :       // W w   means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+									// invert checked status of the left motor reverse checkbox
+					deFocus()
+					break
+		case 71 :		// 'g' or 'G' mean go racing
+		case 103 :  race()
+					break
+		case 85 :		// 'u' or 'U' mean toggle return race
+		case 117 :  checkStr()
+					document.getElementById("raceBack").checked = !document.getElementById("raceBack").checked
+					deFocus()
+					break
+		case 65 :		// 'a' or 'A' means set main arens
+		case 97 :  checkStr()
+					setEnv(0)
+					break
+		case 84 :       // t or T   means toggle track
+		case 116 :  checkStr()
+					setEnv(1)
+					//checkTrack(true, false)
+					break
+		case 72 :       // H   means toggle hills
+		case 104 :  checkStr()
+					setEnv(2)
+					//checkTrack(false, true)
+					break
+		default :	checkKeyRest()		// call general function which moves the robot if press IJKM etc...		
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  so dont do again.
+}	
+ 
+function moveTheRobot() {
+// function to move the robot using the speeds defined for the current selected mode  
+  checkStrings()					// update the speeds based on what users have put in the input boxes
+  checkKeySpecial() 				// check if key has been pressed
+  lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[actionNo-1]
+		// Get Left Speed by reading value from relevant LeftSpeed box and mult by -1 if not reversed wires
+  rspeed = speeds[actionNo+4]
+		// get Right speed
+  if (active) {						// if user has pressed start
+	if (raceOn) raceTime++			// if racing, increment time taken
+	robot.robotDraw(false)			// remove robot from current location
+	robot.moveRobot(lspeed, rspeed)	// move it, according to speed
+	redrawEnvironment(robot.ctx)	// redraw environment as erasing robot may remove part of track etc
+    robot.robotDraw(true)			// draw robot in new positon
+	if (raceOn) checkRaceEnd()		// if racing, see if reached end
+  }
+}   
+
+function checkRaceEnd() {
+	if (raceOn && inRaceEnd(robot.robotx, robot.roboty, document.getElementById("raceBack").checked) ) {
+			// call library file to see if robot is in the area which marks the end of the race
+		raceOn = false		// if so, stop racing
+		actionNo = 5		// set stop mode
+		document.getElementById("p1").innerHTML="Finished after "+(0.5*raceTime/simtime).toFixed(1)+"s"
+	}						// report how long taken
+}
+
+function race() {
+// function to start race
+	actionNo = 5			// put robot in stop mode
+	robot.raceStartPos(document.getElementById("raceBack").checked == false)
+	document.getElementById("p1").innerHTML=""				// clear message about how long taken...
+	raceOn = true											// start to race
+	raceTime = 0
+	actionNo = 1
+	redrawEnvironment(robot.ctx)										// draw environment with robot at start
+}
+
+function setRobotTimer() {
+	// set up timer, and fact that moveTheRobot function is called every simtime seconds...
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function setchecked(sval) {
+	// function called when user pressed Forward/Left etc button, or press F L etc: sval is which mode
+	if (sval > 0 ) {											// first ensure only one checkbox is checked
+		document.getElementById("ForCheck").checked=(sval==1);	// is sval = 1, then is Forward
+		document.getElementById("LeftCheck").checked=(sval==2);
+		document.getElementById("RightCheck").checked=(sval==3);
+		document.getElementById("BackCheck").checked=(sval==4);
+		document.getElementById("StopCheck").checked=(sval==5);
+		actionNo = sval											// and remember which mode
+	}
+}	
+
+function setEnv(which) {
+	// setup the environment ... 0 is basic arena, 1 is one with track
+	if (which>=0) {												// first set relevant checkbox
+		document.getElementById("arena").checked = (which == 0)
+		document.getElementById("addTrack").checked = (which == 1)
+//		document.getElementById("withHills").checked = (which == 2)		// dont include hills this time
+	}	
+	
+	var rvis = (which > 0) ? "visible" : "hidden"
+	document.getElementById("rbLabel").style.visibility = rvis
+	document.getElementById("raceBack").style.visibility = rvis
+	document.getElementById("getSet").style.visibility = rvis
+	
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	raceTrack (document.getElementById("addTrack").checked, false, canvas.width, canvas.height)
+					// if track mode, then set up the track, with no hills
+	robot.speedControl = document.getElementById("addTrack").checked==false
+					// no speed control in track mode
+	redrawEnvironment(robot.ctx)	// draw the environment
+}
+
+function load() {
+// load function - called when page loaded
+    window.defaultStatus="RJM's Simple Robot System";
+	checkBrowser()
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(50, 50, 10, ctx)							// create the robot
+	document.getElementById("LMBack").checked=false				// set not reverse motor
+	document.getElementById("raceBack").checked=false			// set no race track
+	setchecked(5)												// set robot stop mode
+
+	addKeySpecial()												// allow keyboard commands
+  	addMouseDown(canvas)										// and mouse click to move robot
+
+	oneRobot = true
+    handleResize();												// cope if browser resizes
+	
+	setGrayBack()												//set grey background
+	
+	setEnv(0)													// define basic arena
+	active = true
+	
+	setRobotTimer()												// set timer for moving robot
+
+//	document.getElementById("myCanvasSYS").focus()				// focus on canvas
+	focusOn(0)													// focus on first speed
+}
+
+function handleResize(evt) {
+// function  to cope when browser resized
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Set Movement </h1>
+				<p>Define the speed of the robot's left and right motors so it can: 
+				go Forward, turn Left, turn Right, go Backward and Stop.
+				Speeds should be integers, as in the first exercise.</p>
+				<p>You press the appropriate button so the robot goes Forward, Left, etc.</p>
+				<p>You can add a race Track and Go Racing, and do a return race - in the opposite direction.</p>
+				<h2>Keyboard controls</h2>
+				<p>F L R B S make the robot obey the speeds you have defined.</p><p>
+				</p><p>D is for defining the speeds: initially for the Forward left speed: 
+				use the tab key to move to the next speed, shift tab goes back a speed.</p>
+				<p>A sets a plain arena, T the race track, 
+				G means go racing, U sets a return race, W toggles Reverse Left Motor.</p>
+				<p>I, J, K, M move the robot Up, Left, Right or Down.</p>	
+		</div>
+
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>First define the 5 speed pairs for moving the robot Forward/Left/Right/Backwards or Stop.
+				Then check the robot moves as you expect.</p>
+				<p>Press T for track and then Go Racing - see how quickly you can steer to the middle.</p>
+				<p>Try a few times, and also try a return race. Note your fastest time.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="ForCheck" value="go Forward" onclick="setchecked(1);"></p>
+				<p><input type="button" id="LeftCheck" value="turn Left" onclick="setchecked(2);"></p>
+				<p><input type="button" id="RightCheck" value="turn Right" onclick="setchecked(3);"></p>
+				<p><input type="button" id="BackCheck" value="go Backward" onclick="setchecked(4);"></p>
+				<p><input type="button" id="StopCheck" value="Stop" onclick="setchecked(5);"></p>
+				<p>Arena<input type="checkbox" id="arena" checked="checked" onchange="setEnv(0)">
+				; Track<input type="checkbox" id="addTrack" onchange="setEnv(1)"> </p>
+				<p><input type="button" id="getSet" value="Go Racing" onclick="race();" style="visibility: hidden;">
+				   <input type="checkbox" id="raceBack" style="visibility:hidden">
+				   <label id="rbLabel" style="visibility: hidden;">Return Race</label></p>
+				</div>
+				<div class="right">
+				<p>Left motor<input type="text" id="robLeftFor" size="2" tabindex="1" value="0">
+				&nbsp; Right motor<input type="text" id="robRightFor" size="2" tabindex="2" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftLeft" size="2" tabindex="3" value="0">
+				&nbsp; Right motor<input type="text" id="robRightLeft" size="2" tabindex="4" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftRight" size="2" tabindex="5" value="0">
+				&nbsp; Right motor<input type="text" id="robRightRight" size="2" tabindex="6" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftBack" size="2" tabindex="7" value="0">
+				&nbsp; Right motor<input type="text" id="robRightBack" size="2" tabindex="8" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftStop" size="2" tabindex="9" value="0">
+				&nbsp; Right motor<input type="text" id="robRightStop" size="2" tabindex="10" value="0"></p>
+				<p>Reverse Left Motor<input type="checkbox" id="LMBack"></p>
+				<p id="p1">
+				</p></div>	
+				
+			</form>
+		</div>
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot4_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+ </div>
+
+
+
+
+</body></html>

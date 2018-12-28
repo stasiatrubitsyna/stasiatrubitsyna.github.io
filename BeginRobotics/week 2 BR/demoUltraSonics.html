@@ -1,0 +1,412 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoUltraSonics_files/RobotLib.js"></script>
+<link rel="stylesheet" type="text/css" href="demoUltraSonics_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 50
+ 
+ var active = false
+ var canvasback = "rgb(233, 234, 232)" // "rgb(255, 255, 192)";
+ var mouseSel = -1, keySel = -1
+ var beams = []		// array of beams
+ var doingFirst = true
+ var pns = ["p1", "p2", "p3", "p4"]
+ var keySpecial
+ var dummyRobot
+ var dummyLight
+ 
+function keyDeviceMove (dx, dy) {
+var fac = 20
+	if (keySel >= 100) {
+		lights[keySel-100].lightDraw(false)
+		lights[keySel-100].lightx += dx*fac
+		lights[keySel-100].lighty += dy*fac
+		lights[keySel-100].lightDraw(true)
+	}
+	else if (keySel >= 0) {
+		robots[keySel].robotDraw(false)
+		robots[keySel].robotx += dx*fac
+		robots[keySel].roboty += dy*fac
+		robots[keySel].robotDraw(true)
+	}
+}
+ 
+ 
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 83 : 
+		case 115 :	// S = start
+					setPulse()
+					break	
+		case 84 :     // T = Two Beam toggle
+		case 116 :
+					document.getElementById("twoSensors").checked = !document.getElementById("twoSensors").checked
+					checkTwoSensors()
+					break
+		case 82 :	// M = select Robot
+		case 114 :	keySel = 0
+					break
+		case 80 :	// P = select Purple Light
+		case 112 :	keySel = 100
+					break
+		case 67 :	// V = select violet Light
+		case 101 :	keySel = 101
+					break
+		case 66 :	// B = select Blue Light
+		case 100 :	keySel = 102
+					break
+		case 71 :	// G = select Green Light
+		case 103 :	keySel = 103
+					break
+		case 74 :	//   J = left					// these four move the robot Left/Right/Up/Down
+		case 106 :
+					keyDeviceMove(-1, 0)
+					break
+		case 73 : 
+		case 105 :		// I=Up
+					keyDeviceMove(0, -1)
+					break	
+		case 77 :     // M = Dn
+		case 109 :
+					keyDeviceMove(0, 1)
+					break
+		case 75 :     // K = Right
+		case 107 :
+					keyDeviceMove(1, 0)
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+
+ 
+function reportState (pndx, mess) {
+	// report message mess to string pn   but only if pn string currently empty
+	var pn = pns[(doingFirst) ? pndx : pndx+2]
+	var swas = document.getElementById(pn).innerHTML
+	if (swas.length==0) document.getElementById(pn).innerHTML=mess
+}
+
+
+function abeam(bcol, bno) {			// object for a beam
+this.beamno = bno					// its number
+this.beamx = 0						// its start position
+this.beamy = 0						
+this.beams = 0						// size of object which started it (as affects starting point)
+this.beama = 0						// angle of trabel of beam
+this.timeSinceStart = -1			// time since this instance started
+this.totalBeamTime = -1				// time since original beam started (sets width of beam)
+this.beamcol = bcol					// colour of beam
+this.setBeam = setBeam
+this.drawBeamPulse = drawBeamPulse
+this.pulseHitTarget = pulseHitTarget
+this.hitNoLight = hitNoLight
+this.updateSensor = updateSensor
+function setBeam(x, y, s, a, TTBTime) {
+	// beams starts from object at x,y of size s, angle is a
+	this.beamx = x + s * Math.cos(a)	// actual x start position
+	this.beamy = y + s * Math.sin(a)	// actual y start position
+	this.beams = s
+	this.beama = a
+	this.totalBeamTime = TTBTime		// set time since beam oringinally started (0 if from robot) else if echo
+	this.timeSinceStart = 1				// time since actually started
+}	
+function drawBeamPulse(show) {
+	// draw the pulse ... show is true if normal show, otherwise remove it
+	rad = 5 * this.timeSinceStart		// radius of beam is set by time simnce it started
+	var col = (show) ? this.beamcol : canvasback	// colour is background if remove else beam col
+	var exang = (show) ? 0 : Math.PI/64				// draw slight
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	var bw = (110-this.totalBeamTime)/10		// thickness of beam decrease over time as loses power
+	ctx.lineWidth = (show) ? bw+1: bw+3
+	ctx.strokeStyle = col
+	ctx.beginPath()
+	ctx.arc(this.beamx, this.beamy, rad, this.beama - Math.PI/8 - exang, this.beama + Math.PI/8 + exang*2)
+	ctx.stroke()
+}
+function pulseHitTarget(tnum) {
+var tx = (tnum<0) ? robots[0].robotx : lights[tnum].lightx
+var ty = (tnum<0) ? robots[0].roboty : lights[tnum].lighty
+var ts = (tnum<0) ? robots[0].robotsz : lights[tnum].lightsz
+var distbeamtolight = distance(this.beamx, this.beamy, tx, ty)
+var anglebeamtolight = Math.atan2(ty-this.beamy, tx-this.beamx)
+	return this.timeSinceStart*5 >= distbeamtolight-ts && Math.abs(anglebeamtolight-this.beama)<Math.PI/7
+}
+function hitNoLight() {
+// look to see if beam hits Light ... if so, start echo
+var nohit = true
+var ct = 0
+	while (ct<numLights && nohit) {
+		if (beams[ct+1].totalBeamTime<0 && this.pulseHitTarget(ct)) {
+			reportState (0, "Time to Object = "+this.timeSinceStart.toString())
+
+			var retang = Math.atan2(this.beamy-lights[ct].lighty, this.beamx-lights[ct].lightx)
+			beams[ct+1].setBeam(lights[ct].lightx, lights[ct].lighty, lights[ct].lightsz, retang, this.totalBeamTime)
+			beams[ct+1].drawBeamPulse(true)				// start echo
+			nohit = false
+		}
+		else ct++
+	}
+	return nohit
+}
+function updateSensor() {
+	if (this.timeSinceStart >= 0) {
+		this.drawBeamPulse(false);
+		this.totalBeamTime++
+		if (this.totalBeamTime > 100) {
+			if (this.beamno==0) reportState(0, "Beam missed object")
+			reportState(1, "No echo to robot")
+			this.timeSinceStart = -1
+			this.totalBeamTime = 0
+			document.getElementById("pulsebut").style.visibility="visible"
+		}	
+		else if (hitNoTarget(this.beamno)) {
+			this.timeSinceStart++
+			this.drawBeamPulse(true)
+		}	
+	}
+}
+} 
+
+function hitNoTarget (bct) {
+var ans
+    if (bct == 0) {		// is beam from robot
+		ans = beams[bct].hitNoLight()		// test if hit light
+	}
+	else if (beams[bct].pulseHitTarget(-1)) {		// if echo hits robot
+		reportState(1, "Time before return = "+beams[bct].totalBeamTime.toString())
+		beams[bct].timeSinceStart = -1
+		ans = false
+	}
+	else ans = true
+	return ans
+}
+
+function checkRestart() {
+  if (document.getElementById("twoSensors").checked && doingFirst) {
+	var sp2 = document.getElementById("p2").innerHTML
+	if (sp2.length>0) {
+//		if (beams[0].timeSinceStart > 0) beams[0].drawBeamPulse(false)
+		for (var ct=0; ct<=numLights; ct++)
+			if (beams[ct].timeSinceStart > 0) beams[ct].drawBeamPulse(false)
+		doingFirst = false
+		startAPulse(Math.PI/4)
+	}
+  }
+
+}
+
+function doTheSensor() {
+	for (var ct=0; ct<=numLights; ct++) beams[ct].updateSensor()		//update beams
+	for (var ct=0; ct<numLights; ct++) lights[ct].lightDraw(true)		// redraw lights
+	checkRestart()
+	robots[0].robotDraw(true)											// and robot
+	drawAnEnvironment(robots[0].ctx, environment)
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){doTheSensor()},simtime);
+}
+
+function startAPulse (angle) {
+	for (var ct=1; ct<=numLights; ct++) {
+		beams[ct].totalBeamTime = -1
+		beams[ct].timeSinceStart = -1
+	}	
+	beams[0].setBeam (robots[0].robotx, robots[0].roboty, robots[0].robotsz, angle, 0)
+    beams[0].drawBeamPulse(true)
+}
+
+function setPulse() {
+var istwo = document.getElementById("twoSensors").checked
+	document.getElementById("p1").innerHTML=""
+	document.getElementById("p2").innerHTML=""
+	document.getElementById("p3").innerHTML=""
+	document.getElementById("p4").innerHTML=""
+	document.getElementById("pulsebut").style.visibility="hidden"
+	doingFirst = true
+	startAPulse ((istwo) ? -Math.PI/4 : 0)
+}
+
+function checkTwoSensors() {
+	if (document.getElementById("twoSensors").checked) doingFirst=false
+}		// bodge so dont first second sensor
+
+function drawKeyRobot() {
+	dummyRobot.robotx = 40
+	dummyRobot.basecol = robots[0].basecol
+	dummyRobot.robotDraw(true)
+	dummyRobot.ctx.fillStyle = "black"
+	dummyRobot.ctx.fillText("R", dummyRobot.robotx-30, 20)
+}
+
+function drawKeyLight(ct, lstr) {
+	dummyLight.lightx = 110 + ct*60
+	dummyLight.lightcol = lights[ct].lightcol
+	dummyLight.lightDraw(true)
+	dummyLight.ctx.fillStyle = "black"
+	dummyLight.ctx.fillText(lstr, dummyLight.lightx-30, 20)
+}
+
+function drawKeys() {
+var canvas2 = document.getElementById("myCanvasKey");
+var ctx2=canvas2.getContext("2d");
+	ctx2.fillStyle = canvasback;
+    ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+	ctx2.fillStyle = "black"
+	ctx2.font = '14pt Calibri';
+	drawKeyRobot()
+	var lkeys = "PCBG"
+	for (var ct = 0; ct< numLights; ct++) drawKeyLight(ct, lkeys[ct])
+}
+	
+function drawEnvironment() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+	
+    basicEnvironment(canvas.width, canvas.height);
+	redrawEnvironment(ctx)
+
+	ctx.font = '14pt Calibri';
+
+    ctx.lineWidth = 2;
+	robots[0].robotDraw(true)
+}
+
+function load() {
+    window.defaultStatus="RJM's Simple Robot System";
+	document.getElementById("twoSensors").checked=false
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+	  checkKeySpecial()
+    }, false);
+
+	
+	numRobs = 1
+	robots[0] = new aRobot(200, 150, 10, ctx, canvas.width, canvas.height)
+	robots[0].basecol = "rgb(0, 128, 128)"
+	robots[0].robNum = 0
+	robots[0].defineSensors([0, 0, 0])
+	
+	numLights = 4
+	lights[0] = new aLight(450, 80, 10, ctx, 0, "purple")
+	lights[1] = new aLight(330, 220, 10, ctx, 1, "crimson")
+	lights[2] = new aLight(550, 190, 10, ctx, 2, "blue")
+	lights[3] = new aLight(250, 50, 5, ctx, 3, "green")
+	
+	beams[0] = new abeam ("blue", 0)
+	beams[1] = new abeam ("green", 1)
+	beams[2] = new abeam ("red", 2)
+	beams[3] = new abeam ("orange", 3)
+	beams[4] = new abeam ("purple", 4)
+  	addMouseDown(canvas)
+
+    var canvas2 = document.getElementById("myCanvasKey");
+	var ctx2 = canvas2.getContext("2d");
+	ctx2.font = '14pt Calibri';
+	
+	dummyRobot = new aRobot(50, 25, 10, ctx2, canvas2.width, canvas2.height)
+	dummyRobot.sensorTypes = [0,0,0]
+	dummyLight = new aLight(50, 25, 10, ctx2, 0, "black")
+
+    handleResize();
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas	
+
+	setRobotTimer()
+	active = true
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100
+   doResize(newWidth)
+   var canvas2 = document.getElementById("myCanvasKey");
+   canvas2.setAttribute('width', newWidth);
+
+   drawKeys()
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Demo of Ultrasonics</h1>
+				
+				<p>
+				Position the Robot and See how it Uses Ultrasonics to look for objects<br>
+				By default it has one forward looking sensor; but tick the checkbox for two which act at 45 degrees<br>
+				To move the robot, click within it to select it, then click again where you want it repositioned.<br> 
+				You can also click on the other objects to move them in the same way.<br>
+				</p>
+				<h2>Keyboard controls</h2>
+				<p>Press S to send pulse, and T to toggle whether two sensors. </p>
+				<p>For moving items, select a robot or object by pressing the key depicted below the main canvas.
+				Then press I, J, K or M to move it up, left, right or down.</p>
+
+		</div>
+
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<p></p>
+				<canvas id="myCanvasKey" name="myCanvasKey" width="772" height="50"></canvas>
+				<div class="left">
+				<p><input type="button" id="pulsebut" value="Press to Start" onclick="setPulse();" style="visibility: hidden;"></p>
+				<p id="p1"></p><p id="p2"></p></div>
+				<div class="right">
+				<p><input type="checkbox" id="twoSensors" onchange="checkTwoSensors();"> Two Sensors</p>
+				<p id="p3"></p><p id="p4"></p>
+				</div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoUltraSonics_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+ </div>
+
+
+</body></html>

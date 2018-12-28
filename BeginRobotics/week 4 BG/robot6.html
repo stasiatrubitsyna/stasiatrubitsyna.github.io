@@ -1,0 +1,230 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robot6_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot6_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robot6_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+var simtime = 20									// defines how often robot simulation updated
+ 
+ var robot											// define robot object
+ var active = false									// by default not moving
+ var speeds = [0, 0, 0, 0, 0, 0,  0, 0, 0, 0, 0, 0]	// store of values of speeds ... imitially -
+
+ var inBoxIds = ["robLeftNoObj", "robLeftLeft", "robLeftCloseLeft", "robLeftRight", "robLeftCloseRight", "robLeftBoth", "robRightNoObj", "robRightLeft", "robRightCloseLeft", "robRightRight", "robRightCloseRight", "robRightBoth"] 
+													// names of boxes into which user types speeds
+													
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 68 :		// D  means focus on defining speeds ... initially left
+		case 100 :   focusOn(0)
+					break
+		case 83 :       // S 38   means set stop mode
+		case 115 :
+					checkStr()
+					setchecked(5)
+					break
+		case 65 :       // A    means set arena
+		case 97 :
+					checkStr()
+					setEnv(0)
+					deFocus()
+					break
+		case 90 :       // Z    means set maze
+		case 122 :
+					checkStr()
+					setEnv(1)
+					deFocus()
+					break
+		case 87 :       // W 38   means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+					deFocus()
+					break
+		default :   checkKeyRest()				// call general function which moves the robot if press IJKM etc...		
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function getState() {
+// identofy state from sensors. Read distance of object from sensor ... 100% means just visible; 70%  is closer
+var sensClose = 70    										// define what means close
+  if (robot.getSensor(2)<sensClose && robot.getSensor(0)<sensClose) actionNo = 6		// close to both
+  else if (robot.getSensor(2)<sensClose) actionNo = 5									// close to right
+  else if (robot.getSensor(2)<=100) actionNo = 4										// just visible on right
+  else if (robot.getSensor(0)<sensClose) actionNo = 3									// close to left
+  else if (robot.getSensor(0)<=100) actionNo = 2										// just visible on left
+  else actionNo = 1																		// nothing seen
+}	 
+	
+function moveTheRobot() {
+  checkStrings()    			// update speeds array from text boxes
+  checkKeySpecial()				// first look for any keys the user has pressed
+  if (active) {
+	getState()					// set actionNo with state as determined by sensors
+	lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[actionNo-1]
+								// set left speed *-1 if left motor not reversed
+	rspeed = speeds[actionNo+5]	// set right speed
+	robot.robotDraw(false)				// remove robot from current place
+	robot.moveRobot(lspeed, rspeed)		// move it to new position based on speeds
+	redrawEnvironment(robot.ctx)		// redraw environment behind it and then draw robot
+   }
+}   
+	
+function setRobotTimer() {
+	// set up the timer for animating the robot, and the function called every simtime intervals
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function setchecked(sval) {
+	// when start/stop button pressed, toggle state and update caption on button to start or stop
+	active = !active
+	document.getElementById("StopCheck").value="Press to"+(active ? "Stop" : "Start");
+}	
+
+function setEnv(which) {
+// function called when user toggles the simple/maze box
+
+	document.getElementById("arenaCh").checked = (which == 0)
+	document.getElementById("mazeCh").checked = (which == 1)
+
+    var canvas = document.getElementById("myCanvasSYS");
+
+	if (which == 0)	basicEnvironment(canvas.width, canvas.height)
+	else mazeEnvironment(canvas.width, canvas.height)
+	redrawEnvironment(robot.ctx)
+}	
+	
+
+	
+function load() {
+// load function - called when page loaded
+	active = false
+    window.defaultStatus="RJM's Simple Robot System";
+	checkBrowser()
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(50, 20, 6, ctx)    					// define robot in arena
+	robot.defineSensors([2, 0, 2])							// sensors are wall finders with beams
+	oneRobot = true
+	
+	document.getElementById("LMBack").checked=false			// set check boxes for reverse left motor
+
+ 	addMouseDown (canvas)									// allow mouse presses to reposition robot
+	addKeySpecial()											// allow user to command using keys
+
+	setGrayBack()											// grey background
+
+	setEnv(0)
+	
+    handleResize();											// in case browser resized
+	
+	setRobotTimer()
+	focusOn(0)
+}
+
+function handleResize(evt) {
+ // function  to cope when browser resized
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Follow Walls/Maze</h1>
+				<p>Define the speed of the robot's motors depending on what it sees so it follows the walls. 
+				Robot speeds are integers as before. Then press the Start Button.</p>
+				<p>Initially there is a walled arena but a maze can be chosen.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press D for defining the speeds: use tab to move to next speed; 
+				S to start/stop the robot; W to toggle Reverse Left Motor;
+				A sets arena, Z sets maze.</p>
+				<p>Use I, J, K, M to move the robot Up,Left, Right or Down.</p>	
+		</div>
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>First define the 6 speed pairs for moving the robot so that it goes along a wall. 
+				Hint if the robot just sees the wall it should steer towards it, but if close it should steer away.
+				Then check the robot moves as you expect.</p>
+				<p>Then unclick "Walled Arena" and you will see a maze. Can you get the robot to explore it?
+				Hint, your existing wall following should work, but think what you need to do to turn into a
+				gap in the maze - the robot should also turn correctly when both sensors see the wall. Test it.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p>When No Wall is seen :</p>
+				<p>When Wall just seen on left :</p>
+				<p>When Wall closer on left :</p>
+				<p>When Wall just seen in right :</p>
+				<p>When Wall closer on right :</p>
+				<p>When Wall close to both sensors : </p>
+				<p>Walled Arena<input type="checkbox" id="arenaCh" checked="checked" onchange="setEnv(0)">
+				; Maze<input type="checkbox" id="mazeCh" onchange="setEnv(1)"> </p>
+
+				<p><input type="button" id="StopCheck" value="Press toStop" onclick="setchecked();"></p>
+				</div>
+				<div class="right">
+				<p>Left motor<input type="text" id="robLeftNoObj" size="2" tabindex="1" value="0">
+				&nbsp; Right motor<input type="text" id="robRightNoObj" size="2" tabindex="2" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftLeft" size="2" tabindex="3" value="0">
+				&nbsp; Right motor<input type="text" id="robRightLeft" size="2" tabindex="4" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftCloseLeft" size="2" tabindex="5" value="0">
+				&nbsp; Right motor<input type="text" id="robRightCloseLeft" size="2" tabindex="6" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftRight" size="2" tabindex="7" value="0">
+				&nbsp; Right motor<input type="text" id="robRightRight" size="2" tabindex="8" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftCloseRight" size="2" tabindex="9" value="0">
+				&nbsp; Right motor<input type="text" id="robRightCloseRight" size="2" tabindex="10" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftBoth" size="2" tabindex="11" value="0">
+				&nbsp; Right motor<input type="text" id="robRightBoth" size="2" tabindex="12" value="0"></p>
+				<p>Reverse Left Motor<input type="checkbox" id="LMBack"></p>
+				<p></p>
+				</div>	
+				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot6_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+ </div>
+
+
+</body></html>

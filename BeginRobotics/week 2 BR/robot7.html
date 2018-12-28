@@ -1,0 +1,232 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robot7_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot7_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robot7_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20									// defines how often robot simulation updated
+ 
+ var robot											// define robot object
+ var active = false									// by default not moving
+ var speeds = [0, 0, 0, 0, 0,  0, 0, 0, 0, 0]		// copies of speeds - set to zero
+ var inBoxIds = ["robLeftNoObj", "robLeftLeft", "robLeftCloseLeft", "robLeftRight", "robLeftCloseRight", "robRightNoObj", "robRightLeft", "robRightCloseLeft", "robRightRight", "robRightCloseRight"] 
+													// names of boxes used for inputting speeds
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 68 :		// D  means focus on defining speeds ... initially left
+		case 100 :   focusOn(0)
+					break
+		case 83 :       // S 38   means set stop mode
+		case 115 :
+					checkStr()
+					setchecked()
+					break
+		case 80 :
+		case 112 : 	checkStr()
+					initialPos()
+					break
+		case 66 :       // E 38   means toggle environment Wire box
+		case 98 :
+					checkStr()
+					document.getElementById("Beam").checked = !document.getElementById("Beam").checked
+					checkBeam()
+					deFocus()
+					break
+		case 87 :       // W 38   means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+					deFocus()
+					break
+		default :	checkKeyRest()			// call general function which moves the robot if press IJKM etc...			
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+  
+function getState() {
+// set actionNo with state of robot - based on sensors
+// getSensor(n) gets sensor .... as % of range
+var sensClose = 30    // define what means by close
+var sensFar = 100		// far ... just detectable
+  if (robot.getSensor(2)<sensClose) actionNo = 5			// far away on right
+  else if (robot.getSensor(2)<=sensFar) actionNo = 4		// closer on right
+  else if (robot.getSensor(0)<sensClose) actionNo = 3		// and on left
+  else if (robot.getSensor(0)<=sensFar) actionNo = 2
+  else actionNo = 1											// nothing seen
+}	 
+	 
+function moveTheRobot() {
+  checkStrings()    			// update speeds array from text boxes
+  checkKeySpecial()				// first look for any keys the user has pressed
+  
+ if (active) {
+	getState()					// identify state from sensors ... sets actionNo
+								// load up speeds (noting if left motor is wired backwards) for this actionNo
+	lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[actionNo-1]
+	rspeed = speeds[actionNo+4]
+	if (robot.stuck == false) {
+		robot.robotDraw(false)				// clear robot
+		robot.moveRobot(lspeed, rspeed)		// move it
+		redrawEnvironment(robot.ctx)		// draw environment back and robot
+	}	
+  }
+}   
+	
+function setRobotTimer() {
+	// set up the timer for animating the robot, and the function called every simtime intervals
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function setchecked() {
+	// when start/stop button pressed, toggle state and update caption on button
+	active = !active
+	document.getElementById("StopCheck").value="Press to "+(active ? "Stop" : "Start");
+}	
+
+function initialPos() {
+	// put robot back in its initial position
+	robot.robotDraw(false)				// undraw from current
+	robot.robotx = 70					// set position and angle
+	robot.roboty = 60
+	robot.angle = 0
+	redrawEnvironment(robot.ctx)		// draw environment and robot
+	robot.stuck = false					// unstuck it
+}
+
+function checkBeam() {
+// user has toggled narrow/wide beam option
+var smode = (document.getElementById("Beam").checked) ? 4 : 3		// sensor type is 4 or 3 for wide/narrow
+var activewas = active
+	active = false								// stop robot
+	robot.robotDraw(false)						// undraw it
+	robot.defineSensors([smode, 0, smode])		// set so has beams
+	redrawEnvironment(robot.ctx)				// draw environment and robot
+	active = activewas							// reset active status as it was
+}	
+	
+function load() {
+// load function - called when page loaded
+	active = false
+    window.defaultStatus="RJM's Simple Robot System";
+	checkBrowser()
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	document.getElementById("LMBack").checked=false		// set checkboxes ... no reverse left motor
+	document.getElementById("Beam").checked=false		// narrwo beam
+	setGrayBack()
+	
+    addKeySpecial()										// ensure user can press keys
+	addMouseDown(canvas)								// and respond to mouse
+
+	robot = new aRobot(70, 60, 12, ctx)					// define robot
+	robot.defineSensors([3, 0, 3])						// with left/right light beams
+	oneRobot = true										// tell library that there is a robot
+	
+	numLights = 2										// define two lights
+	lights[0] = new aLight(400, 110, 10, ctx, 0, "red")
+	lights[1] = new aLight(190, 190, 15, ctx, 1, "red")
+
+    handleResize();										// in case browser resized
+	
+	setRobotTimer()										// set simulation timer
+	focusOn(0)
+}
+
+function handleResize(evt) {
+ // function  to cope when browser resized
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;					// adapt camvas width with browser
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>React to Lights</h1>
+				<p>The arena has two lights which the robot senses with two beams. 
+				You define the speeds of the robot's motors depending on its sensors. Speeds are integers as before.
+				</p>
+				<p>Click in the arena to reposition the robot; you can put it back in its original position; and
+				 give it wider beams.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press D for defining the speeds: tab to next speed; S to start/stop the robot, P to put in initial position, 
+				W to toggle Reverse Left Motor, B to toggle the narrow/wide beam option.</p>
+				<p>Use I, J, K, M to move the robot Up, Left, Right or Down.</p>	
+		</div>
+			<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>Define the robot's speeds so it steers to a light, press Start and check it works.</p>
+				<p>Select wider beams - does the robot work as well?</p>
+				<p>Try to get the robot to steer towards a light but then veer away when it is close.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p>When No Light is seen :</p>
+				<p>When Light just seen on left :</p>
+				<p>When Light closer on left :</p>
+				<p>When Light just seen in right :</p>
+				<p>When Light closer on right :</p>
+				<p>Wider Beams <input type="checkbox" id="Beam" onchange="checkBeam()"></p>
+				<p><input type="button" id="StopCheck" value="Press to Stop" onclick="setchecked();"></p>
+				</div>
+				<div class="right">
+				<p>Left motor<input type="text" id="robLeftNoObj" size="2" tabindex="1" value="0">
+				&nbsp; Right motor<input type="text" id="robRightNoObj" size="2" tabindex="2" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftLeft" size="2" tabindex="3" value="0">
+				&nbsp; Right motor<input type="text" id="robRightLeft" size="2" tabindex="4" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftCloseLeft" size="2" tabindex="5" value="0">
+				&nbsp; Right motor<input type="text" id="robRightCloseLeft" size="2" tabindex="6" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftRight" size="2" tabindex="7" value="0">
+				&nbsp; Right motor<input type="text" id="robRightRight" size="2" tabindex="8" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftCloseRight" size="2" tabindex="9" value="0">
+				&nbsp; Right motor<input type="text" id="robRightCloseRight" size="2" tabindex="10" value="0"></p>
+				<p>Reverse left motor wires<input type="checkbox" id="LMBack" tabindex="11"></p>
+				<p><input type="button" id="startAgain" value="Put in Initial Position" onclick="initialPos();"></p>
+				</div>	
+				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot7_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+
+</body></html>

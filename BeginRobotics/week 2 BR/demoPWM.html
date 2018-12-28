@@ -1,0 +1,345 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoPWM_files/RobotLib.js"></script>
+<link rel="stylesheet" type="text/css" href="demoPWM_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+//  (c) Prof Richard Mitchell
+// Program to illustrate how PWM is used to set speed of a motor
+// and how a bridge circuit sets it direction.
+
+ var simtime = 20
+ var speed = 50
+ var angle = 0
+ var keySpecial = 0
+ //var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+ var motorCol = "rgb(164, 164, 164)"
+ 
+//   function to draw environment
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 85 : 
+		case 117 :		// U = Up
+					setPulse(1)
+					break	
+		case 68 :     // D = Dn
+		case 100 :
+					setPulse(-1)
+					break
+		case 86 :     // V = Reverse wires
+		case 118 :
+					document.getElementById("MotorDirn").checked = !document.getElementById("MotorDirn").checked
+					drawBridge()
+					break
+		case 80 :     // P = show PWM
+		case 112 :
+					document.getElementById("PWMoption").checked = !document.getElementById("PWMoption").checked
+					drawPWM()
+					break
+		case 77 :     // M = show Measurement
+		case 109 :
+					document.getElementById("Measoption").checked = !document.getElementById("Measoption").checked
+					drawPWM()
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function putPoints (ctx, data) {
+// draw lines between points in data
+	ctx.beginPath()
+	for (ct=0; ct<data.length; ct+=2) {						// for each item
+		if (ct==0) ctx.moveTo(data[ct], data[ct+1])			// if first moveTo
+		else ctx.lineTo(data[ct], data[ct+1])				// else draw lineTo
+	}
+	ctx.stroke()
+}
+
+
+function drawArrow(col, lw, alen) {
+// draw line on motor to indicate its rotation angle
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.strokeStyle=col
+	ctx.lineWidth = lw
+	putPoints(ctx, [cw*75, ch*50, cw*75+ ch*alen*Math.cos(angle), ch*50+ch*alen*Math.sin(angle)])
+}
+
+function doMotor() {
+// draw motor .. circle with line indicating its angle
+	checkKeySpecial()
+	drawArrow(motorCol, 4, 28)												// undraw line
+	var dirn = (document.getElementById("MotorDirn").checked) ? -1 : 1		// note direction
+	angle = angle + dirn*speed*Math.PI/1600									// update angle
+	drawArrow("black", 2, 26)												// draw line in new position
+}
+	
+function drawHResistor(ctx, x, y, sz) {
+		// draw resistor
+	putPoints (ctx, [x, y, x+sz, y-2*sz, x+3*sz, y+2*sz, x+5*sz, y-2*sz, x+7*sz, y+2*sz, x+9*sz, y-2*sz, x+11*sz, y+2*sz, x+12*sz, y])
+}
+
+function drawBridge() {
+	// draw bridge circuit and associated resistor
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(1*cw, 54*ch, 40*cw, 50*ch);					// clear part of canvas
+var isrev = document.getElementById("MotorDirn").checked
+	ctx.font = "12pt Calibri"
+
+	ctx.fillStyle="black"
+	ctx.textAlign = "right"
+	ctx.textBaseline="middle"
+	ctx.fillText("PWM", cw*10, ch*56)								// show V for PWM signal
+
+	ctx.strokeStyle="black"
+	ctx.lineWidth = 2
+
+	putPoints(ctx, [cw*12, ch*56, cw*20, ch*56])				// draw line, resistor, line to bridge
+	drawHResistor (ctx, cw*20, ch*56, cw/2)
+	putPoints(ctx, [cw*26, ch*56, cw*30, ch*56, cw*30, ch*60])
+
+	putPoints(ctx, [20*cw,65*ch, 20*cw,60*ch, 40*cw,60*ch, 40*cw, 65*ch])		// draw lines above switches
+	putPoints(ctx, [20*cw,70*ch, 20*cw, 80*ch])									// to side
+	putPoints(ctx, [40*cw,70*ch, 40*cw, 80*ch])
+	putPoints(ctx, [20*cw,85*ch, 20*cw,90*ch, 40*cw,90*ch, 40*cw, 85*ch])		//below switches
+	
+	putPoints(ctx, [20*cw,75*ch, 26*cw, 75*ch])
+	putPoints(ctx, [40*cw,75*ch, 34*cw, 75*ch])
+	putPoints(ctx, [30*cw, 90*ch, 30*cw, 92*ch])
+	putPoints(ctx, [30*cw-6, 92*ch, 30*cw+6, 92*ch])
+	putPoints(ctx, [30*cw-4, 93*ch, 30*cw+4, 93*ch])
+	putPoints(ctx, [30*cw-2, 94*ch, 30*cw+2, 94*ch])
+	
+	ctx.fillStyle = "grey";								// draw motor
+	ctx.beginPath()
+	ctx.arc(30*cw, 75*ch, 3*cw, 0, 2*Math.PI)
+	ctx.fill()
+	ctx.fillStyle = "black";
+    ctx.fillRect(26*cw, 73*ch, 1*cw, 4*ch);
+    ctx.fillRect(33*cw, 73*ch, 1*cw, 4*ch);
+	ctx.fillText("+", 26*cw, 70*ch)
+	ctx.fillText("-", 34*cw, 70*ch)
+	
+	ctx.lineWidth = 4
+	if (isrev) {										//now draw open/closed switches
+		putPoints(ctx, [20*cw,65*ch, 18*cw,69*ch])
+		putPoints(ctx, [40*cw,65*ch, 40*cw,70*ch])
+		putPoints(ctx, [20*cw,85*ch, 20*cw,80*ch])
+		putPoints(ctx, [40*cw,85*ch, 42*cw,81*ch])
+		
+	}
+	else {
+		putPoints(ctx, [20*cw,65*ch, 20*cw,70*ch])
+		putPoints(ctx, [40*cw,65*ch, 42*cw,69*ch])
+		putPoints(ctx, [20*cw,85*ch, 18*cw,81*ch])
+		putPoints(ctx, [40*cw,85*ch, 40*cw,80*ch])
+	}
+}
+
+function setMotorTimer() {
+	setInterval(function(){doMotor()},simtime);
+}
+
+function drawPWM() {
+		// draw PWM signal, average and measured signal
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(1*cw, 6*ch, 52*cw, 45*ch);					// clearpart of canvas
+
+	ctx.font = "12pt Calibri"
+	
+	ctx.lineWidth = 2										// draw average speed
+	ctx.strokeStyle="red"
+	var y = ch*(50 - 40*speed/100)
+	ctx.beginPath()
+	ctx.moveTo(cw*10, y)
+	ctx.lineTo(cw*50, y)
+	ctx.stroke()
+	
+	ctx.strokeStyle="black"									// draw axes
+	ctx.beginPath()
+	ctx.moveTo(cw*10, ch*7)
+	ctx.lineTo(cw*10, ch*50)
+	ctx.lineTo(cw*53, ch*50)
+	ctx.stroke()
+
+	if (document.getElementById("PWMoption").checked) {		// if selected, draw PWM signal
+		ctx.strokeStyle="blue"
+		ctx.lineWidth=3
+		var x = 3+cw*10, x2
+		for (var ct=0; ct<5; ct++) {					// five repeats of signals
+			x2 = x + cw*8*speed/100
+			ctx.beginPath()
+			ctx.moveTo(x, ch*50)						// show low-to-high
+			ctx.lineTo(x, ch*10)
+			ctx.lineTo(x2, ch*10)						// show high value
+			ctx.lineTo(x2, ch*50)						// high to low
+			x = x + cw*8
+			ctx.lineTo(x, ch*50)						// show low value
+			ctx.stroke()
+		}
+	}	
+
+	if (document.getElementById("Measoption").checked) {
+					// if selected show measurement in 95 percentile of cycle
+		ctx.strokeStyle="green"
+		ctx.lineWidth=2
+		var x = 3+cw*10, x2
+		for (var ct=0; ct<5; ct++) {
+			x2 = x + cw*8*0.95
+			ctx.beginPath()
+			ctx.moveTo(x2, ch*50)
+			ctx.lineTo(x2, y)
+			x = x + cw*8
+			ctx.lineTo(x, y)
+			ctx.lineTo(x, ch*50)
+			ctx.stroke()
+		}
+	}	
+
+	ctx.fillStyle="black"								// label signal
+	ctx.textAlign = "right"
+	ctx.textBaseline="middle"
+	ctx.fillText(speed.toString(), cw*9, y)
+	ctx.fillText("PWM", cw*9, ch*9)
+	ctx.fillText("t", cw*55, ch*50)
+}
+
+function setPulse(change) {
+		//change speed up or down - as set by change
+	speed = speed + change*5
+	if (speed < 0) speed = 0				// ensure inrange 0..95%
+	else if (speed > 95) speed = 95
+	document.getElementById("p1").innerHTML="Speed is "+speed.toString()+"%"
+	
+	drawPWM()
+}
+
+function drawEnvironment() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);		// clear canvas
+
+	ctx.fillStyle = motorCol  // "red"						// show circle to represent motor
+	ctx.beginPath()
+	ctx.arc (cw*75, ch*50, ch*30, 0, 2*Math.PI)
+	ctx.fill()
+
+	setPulse(0)
+}
+
+function load() {
+    window.defaultStatus="RJM's PWM Demo";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+	document.getElementById("PWMoption").checked = true
+	document.getElementById("Measoption").checked = false
+	
+    handleResize();
+
+	setMotorTimer()
+	active = true
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100
+   canvas.setAttribute('width', newWidth);
+   var newHeight = (newWidth>600) ? 300 : newWidth*0.5
+   canvas.setAttribute('height', newHeight);
+   drawEnvironment();
+   drawBridge()
+}
+
+window.addEventListener('resize', handleResize);
+
+ 	
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>PWM for setting Speed </h1>
+				
+				<p>See  Pulse Width Modulation PWM used to set the speed of a motor.</p>
+				<p>The PWM signal switches between two values, but the time at each value varies. 
+				More time at the high value, means its average value is higher and the motor turns faster.</p>
+				<p>See what the signal looks like as you command a faster/slower speed.</p>
+				<p>Also shown is the 'bridge' whose switches connect the PWM signal to the positive or 
+				negative ends of the motor, so setting its direction.</p>
+				<p>At the end of the PWM cycle, the voltage across the resistor is found - to measure the motor speed.</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>Press U and D to speed up or down, V to reverse motor, P for show PWM option, M for show Measurement option. </p>
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="SpeedUp" value="Speed Up" onclick="setPulse(1);">
+				<input type="button" id="SlowIt" value="Slow Down" onclick="setPulse(-1);"></p>
+				<p id="p1">Speed is 50%</p></div>
+				<div class="right">
+				<p>Reverse Motor<input type="checkbox" id="MotorDirn" checked="checked" onchange="drawBridge()"></p>
+				<p>Show PWM<input type="checkbox" id="PWMoption" checked="checked" onchange="drawPWM()"> 
+				  ; Show Measurement<input type="checkbox" id="Measoption" onchange="drawPWM()"></p>
+				</div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoPWM_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+</body></html>

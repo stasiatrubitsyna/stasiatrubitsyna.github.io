@@ -1,0 +1,276 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoEric_files/RobotLib.js"></script>
+<script type="text/javascript" src="demoEric_files/drawEric.js"></script>
+<link rel="stylesheet" type="text/css" href="demoEric_files/style.css">
+
+<script language="JavaScript">
+
+// (c) Prof Richard Mitchell
+// code to show how the voltages set for the two motors affect how the wheels turn
+
+<!-- Begin
+
+ var simtime = 20
+ var speed = 25						// speed of motors
+ var langle = 0, rangle = 0			// angle of spokes
+ var ericAngle = 60					// angle at which ERIC drawn
+ var ericSpinDirection = 1			// used when spinning ERIC
+ var ericSpinCount = 0
+ 
+ var keySpecial = 0
+ var canvasback = "rgb(233, 234, 232)"			// colours of background
+ var canvasbackdarker = "rgb(200, 201, 199)"
+ var canvasbacklighter = "rgb(249, 250, 248)"
+ 
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 76 :		// 'l' or 'L' means Reverse left motor
+		case 108 :	
+					document.getElementById("LMotorDirn").checked = !document.getElementById("LMotorDirn").checked
+					reverseMotor()
+					break
+		case 82 :		// R  means  reverse right motor
+		case 114 :  
+					document.getElementById("RMotorDirn").checked = !document.getElementById("RMotorDirn").checked
+					reverseMotor()
+					break
+		case 74 :
+		case 106 : // J rotates robot left
+					rotateEric(-1, 5)
+					break
+		case 75 :
+		case 107 : // K rotates robot right
+					rotateEric(1, 5)
+					break
+		case 73 :
+		case 105 : // I speed up
+					setSpeed(1)
+					break
+		case 77:
+		case 109 : // M slow down
+					setSpeed(-1)
+					break
+		case 65 : 	 
+		case 107 :	// A sets autoSpin
+					document.getElementById("autoSpin").checked = !document.getElementById("autoSpin").checked
+					break
+		case 83 :		// S  means  single ERIC
+		case 115 :  showMode (0)
+					break
+		case 68 :		// D  means  double ERIC
+		case 110 :  showMode (1)
+					break
+		case 70 :		// F  means  2D
+		case 112 :  showMode (2)
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function updateAngle(isLeft) {
+// update angle of spoke for left/right wheel
+var dirn = 0
+	if (isLeft) {												// if left wheel
+		dirn = (document.getElementById("LMotorDirn").checked) ? 1 : -1		// note direction
+		if (document.getElementById("show2D").checked) dirn = -dirn
+				// invert direction in 2D as viewing ERIC from right side
+		langle = langle + dirn*speed*Math.PI/1600				// calculate next angle
+		if (langle > 2*Math.PI) langle = 0						// keep in range 0.. 2pi
+		else if (langle < 0) langle = 2*Math.PI
+	}
+	else {														// right wheel
+		dirn = (document.getElementById("RMotorDirn").checked) ? -1 : 1		// its direction
+		rangle = rangle + dirn*speed*Math.PI/1600				// update angle
+		if (rangle > 2*Math.PI) rangle = 0
+		else if (rangle < 0) rangle = 2*Math.PI
+	}
+}
+
+function rotateEric(da, aFac) {
+// rotate angle at which ERIC is viewed by da*aFac ... keep in range -90..90
+	ericAngle += da*aFac								// new angle
+	var reverse = true									// assume reversing
+	if (ericAngle<=-90) ericAngle = -90+aFac			// reached -90, reverse
+	else if (ericAngle>=90) ericAngle = 90-aFac			// reached 90, reverse
+	else reverse = false								// not reversing
+	if (document.getElementById("autoSpin").checked && reverse)
+		ericSpinDirection = 0 - ericSpinDirection		// if spinning and reverse, change dirn
+}	
+	
+function doMotor() {
+// called by timer
+	checkKeySpecial()
+	
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+		// first draw canvas ... gradient if 3D
+	if (document.getElementById("show2D").checked) 
+		clearCanvas(ctx, cw, ch, [canvasback], 0)
+	else
+		clearCanvas(ctx, cw, ch, [canvasback, canvasbacklighter, canvasbackdarker], ch*60)
+
+	if (document.getElementById("show3D").checked) {						// in 3D
+		drawEric (ctx, cw, ch, cw*50, ch*45, ericAngle, 0, [langle, rangle], 0)		// draw
+	
+		if (document.getElementById("autoSpin").checked) {			// if spinning
+			ericSpinCount++											// update 
+			if (ericSpinCount >= 3) {
+				rotateEric(ericSpinDirection, 1)
+				ericSpinCount = 0
+			}	
+		}	
+	}
+	else if (document.getElementById("showSep").checked) {			// two separate 3D ERICS
+		drawEric (ctx, cw, ch, cw*25, ch*45, -30, 0, [langle, rangle], 0)
+		drawEric (ctx, cw, ch, cw*75, ch*45, 30, 0, [langle, rangle], 0)
+	}
+	else {
+		drawEric (ctx, cw, ch, cw*25, ch*45, -90, 0, langle, 2)		// left wheel behind motor
+		drawEric (ctx, cw, ch, cw*75, ch*45, 90, 0, rangle, 1)		// right wheel in front
+	}
+	updateAngle(true)						// calculate angles of left/right spokes
+	updateAngle(false)
+}
+
+function showMode(m) {
+		// set mode for display
+	document.getElementById("show3D").checked = m == 0
+	document.getElementById("showSep").checked = m == 1
+	document.getElementById("show2D").checked = m == 2
+	
+	var rvis = (m == 0) ? "visible" : "hidden"
+	document.getElementById("autoSpin").style.visibility = rvis
+	document.getElementById("lButton").style.visibility = rvis
+	document.getElementById("rButton").style.visibility = rvis
+	document.getElementById("aseLabel").style.visibility = rvis
+}
+
+function setMotorTimer() {
+	setInterval(function(){doMotor()},simtime);
+}
+
+function setSpeed(ds) {
+		// change speed by amount ds
+var dsFac = 5
+	speed += ds*dsFac
+	if (speed<0) speed = 0
+	else if (speed>50) speed = 50
+}
+
+function reverseMotor() {
+}   
+
+function load() {
+    window.defaultStatus="RJM's Motor Wheel";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	document.getElementById("LMotorDirn").checked=true
+	document.getElementById("RMotorDirn").checked=true
+	document.getElementById("autoSpin").checked=false
+	rangle = 0
+	langle = 0
+	showMode(0)
+	
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+	
+	document.getElementById("myCanvasSYS").focus()				// focus on canvas
+
+    handleResize();
+ 	
+	setMotorTimer()
+	
+	active = true
+}
+
+function handleResize(evt) {
+		// window resized, recalculate canvas size
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100
+   canvas.setAttribute('width', newWidth);
+   var newHeight = (newWidth>600) ? 300 : newWidth*0.5
+   canvas.setAttribute('height', newHeight);
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Voltages and Directions </h1>
+				
+				<p>An ERIC is depicted with its wheels turning. If a motor speed is positive
+				then the associated wheel turns clockwise, as viewed from outside. You can 
+				select whether each wheel is positive or negative. 
+				You can manually rotate the ERIC left or right, or set it to spin itself.</p>
+				<p>You can also view ERIC separately on its left and right sides in 3D or 2D.</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>L reverses left wheel voltage, R reverses that on right wheel. I speeds up wheel, M shows it down.
+				J rotates robot left, K to right, A sets auto spin. S for single ERIC, D for double, F for 2D view</p>
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p>Left Motor Positive Voltage<input type="checkbox" id="LMotorDirn" checked="checked" onchange="reverseMotor()"></p>
+				<p>Right Motor Positive Voltage<input type="checkbox" id="RMotorDirn" checked="checked" onchange="reverseMotor()"></p>
+				<p><input type="button" id="supButton" value="Speed Up" onclick="setSpeed(1);">
+				<input type="button" id="sdownButton" value="Slow Down" onclick="setSpeed(-1);"></p>
+				</div>
+				<div class="right">
+				<p>
+				Single ERIC<input type="checkbox" id="show3D" checked="checked" onclick="showMode(0)"> 
+				; Double<input type="checkbox" id="showSep" onclick="showMode(1)">
+				; In 2D<input type="checkbox" id="show2D" onclick="showMode(2)">
+				</p>
+				<p><input type="button" id="lButton" value="Rotate Left" onclick="rotateEric(-1, 5);" style="visibility: visible;">
+				<input type="button" id="rButton" value="Rotate Right" onclick="rotateEric(1, 5);" style="visibility: visible;"></p>
+				<p><label id="aseLabel" style="visibility: visible;">Auto Spin ERIC</label><input type="checkbox" id="autoSpin" style="visibility: visible;"> </p>
+				</div>	
+				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoEric_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+</body></html>

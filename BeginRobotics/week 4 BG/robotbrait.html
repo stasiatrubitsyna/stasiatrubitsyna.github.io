@@ -1,0 +1,358 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robotbrait_files/RobotLib.js"></script>
+<script type="text/javascript" src="robotbrait_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robotbrait_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20
+ 
+ var robot
+ var active = false
+ var speeds = [0, 0, 0,   0, 0, 0]
+ var inBoxIds = ["neuronLL", "neuronLR", "neuronLM", "neuronRL", "neuronRR", "neuronRM"] 
+
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+//var isInComm = document.activeElement.name=="commandList"
+var isInComm = false
+	if (keySpecial > 0) {
+		var fitem = document.activeElement
+		isInComm = fitem.name == "commandList"
+	}
+	switch (keySpecial) {
+		case 68:		// 'd' or 'D' mean focus on neurons ...
+		case 100 :  focusOn(0)	
+					break
+		case 87 :       // w or W  means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+					deFocus()
+					break
+		case 66	:		
+		case 98 :	// b or B to toggle wide beams bos
+					checkStr()
+					document.getElementById("Beam").checked = !document.getElementById("Beam").checked
+					deFocus()
+					checkBeam()
+					break
+		case 76	:		
+		case 108 :	// l or L to toggle Line to Follow mode
+					checkStr()
+					document.getElementById("lineOpt").checked = !document.getElementById("lineOpt").checked
+					deFocus()
+					setLineLight()
+					break
+		case 83 :		// S  means start stop
+		case 115 :  checkStr()
+					setchecked()	
+					break
+		case 80 :
+		case 112 : 	checkStr()
+					initialPos()
+					break
+		default :   checkKeyRest()			
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+ 
+function bcircle(ctx, x, y, r) {
+ 	ctx.beginPath();
+	ctx.arc(x, y, r, 0, 2*Math.PI);
+	ctx.fill();
+}
+
+function tcircle (ctx, tbstr, x, y, r) {
+	ctx.fillStyle = canvasback;
+	bcircle (ctx, x, y, r)
+	ctx.fillStyle = "blue";
+	ctx.fillText(tbstr, x, y)
+}
+   
+function drawBrait() {
+var canvas = document.getElementById("myCanvasBrait");
+var ctx=canvas.getContext("2d");
+var ch = canvas.height
+var cw = canvas.width
+	ctx.fillStyle = canvasback;
+    ctx.fillRect(0, 0, cw, ch);
+	
+	ctx.strokeStyle = "blue" 
+	ctx.lineWidth = 2
+
+	ctx.fillStyle = "rgb(220, 0, 220)"
+	bcircle(ctx, cw/2, ch*0.55, ch*0.44)
+
+	ctx.fillStyle = "black" 
+	ctx.fillRect(cw*0.45-ch*0.44, ch*0.55-ch*0.25, cw*0.05, ch*0.5)
+	ctx.fillRect(cw*0.5+ch*0.44, ch*0.55-ch*0.25, cw*0.05, ch*0.5)
+	
+	ctx.font = '12pt Calibri';
+	ctx.textAlign="center"; 
+	ctx.textBaseline="middle"; 
+	
+	tcircle(ctx, "LL", cw*0.29, ch*0.39, ch*0.08);
+	tcircle(ctx, "LR", cw*0.43, ch*0.39, ch*0.08);
+	tcircle(ctx, "RL", cw*0.57, ch*0.39, ch*0.08);
+	tcircle(ctx, "RR", cw*0.71, ch*0.39, ch*0.08);
+	tcircle(ctx, "LM", cw*0.43, ch*0.72, ch*0.08);
+	tcircle(ctx, "RM", cw*0.57, ch*0.72, ch*0.08);
+	ctx.fillText("LS", cw*0.25, ch*0.15)
+	ctx.fillText("RS", cw*0.76, ch*0.15)
+var sensx = ch*0.44*0.5
+var sensy = ch*0.44*0.86
+	ctx.strokeStyle = "black" 
+	ctx.beginPath()
+	ctx.moveTo(cw*0.29, ch*0.31)
+	ctx.lineTo(cw*0.5-sensx, ch*0.55-sensy)
+	ctx.lineTo(cw*0.57, ch*0.31)
+	ctx.stroke()
+	ctx.beginPath()
+	ctx.moveTo(cw*0.71, ch*0.31)
+	ctx.lineTo(cw*0.5+sensx, ch*0.55-sensy)
+	ctx.lineTo(cw*0.43, ch*0.31)
+	ctx.stroke()
+	
+	ctx.fillStyle = "blue"
+	ctx.beginPath()
+	ctx.moveTo(cw*0.5-sensx-ch*0.2, ch*0.55-sensy-ch*0.2)
+	ctx.lineTo(cw*0.5-sensx, ch*0.55-sensy)
+	ctx.lineTo(cw*0.5-sensx+ch*0.07, ch*0.55-sensy-ch*0.2)
+	ctx.fill()
+	ctx.beginPath()
+	ctx.moveTo(cw*0.5+sensx-ch*0.07, ch*0.55-sensy-ch*0.2)
+	ctx.lineTo(cw*0.5+sensx, ch*0.55-sensy)
+	ctx.lineTo(cw*0.5+sensx+ch*0.2, ch*0.55-sensy-ch*0.2)
+	ctx.fill()
+	
+	ctx.fillStyle="green"
+	ctx.fillRect(cw*0.15, ch*0.53, cw*0.15, ch*0.04)
+	ctx.fillRect(cw*0.70, ch*0.53, cw*0.15, ch*0.04)
+	
+	drawLine(ctx, cw*0.29, ch*0.47, cw*0.29, ch*0.55)
+	drawLine(ctx, cw*0.43, ch*0.47, cw*0.29, ch*0.55)
+	drawLine(ctx, cw*0.43, ch*0.64, cw*0.29, ch*0.55)
+
+	drawLine(ctx, cw*0.71, ch*0.47, cw*0.71, ch*0.55)
+	drawLine(ctx, cw*0.57, ch*0.47, cw*0.71, ch*0.55)
+	drawLine(ctx, cw*0.57, ch*0.64, cw*0.71, ch*0.55)
+	
+} 
+ 
+function getSpeed(lsensor, rsensor, isLeft) {
+ var soffset = (isLeft) ? 0 : 3
+  return speeds[0+soffset]*lsensor + speeds[1+soffset]*rsensor + speeds[2+soffset]
+}	 
+	
+function getSensor(ct) {
+var   raws = robot.getSensor(ct)
+var ans = (raws>100) ? 0 : 1
+	return ans
+}		
+	
+function moveTheRobot() {
+  checkStrings()
+  checkKeySpecial()
+	
+  if (active) {
+    var lsensor = getSensor(0)
+    var rsensor = getSensor(2)
+	
+	lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * getSpeed(lsensor, rsensor, true)
+	rspeed = getSpeed(lsensor, rsensor, false)
+	robot.robotDraw(false)
+	robot.moveRobot(lspeed, rspeed)
+	redrawEnvironment(robot.ctx)
+  }
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function setchecked(sval) {
+	active = !active
+	document.getElementById("StopCheck").value="Press to "+(active ? "Stop" : "Start");
+}	
+
+function initialPos() {
+	robot.robotDraw(false)
+	robot.robotx = 70
+	robot.roboty = 60
+	robot.angle = 0
+	robot.stuck = false
+	robot.robotDraw(true)
+	redrawEnvironment(robot.ctx)
+}
+
+function checkBeam() {
+var canvas = document.getElementById("myCanvasSYS");
+if (document.getElementById("lineOpt").checked == false) {
+
+	var smode = (document.getElementById("Beam").checked) ? 4 : 3
+	var activewas = active
+		active = false
+		robot.robotDraw(false)
+		addPathToFollow	(false, canvas.width, canvas.height)
+		robot.defineSensors([smode, 0, smode])		/// so has forward sensor only
+		redrawEnvironment(robot.ctx)
+		active = activewas
+	}
+}	
+	
+function setLineLight() {
+var canvas = document.getElementById("myCanvasSYS");
+	var rvis = (document.getElementById("lineOpt").checked) ? "hidden" : "visible"
+	document.getElementById("Beam").style.visibility = rvis
+	document.getElementById("wbLabel").style.visibility = rvis
+
+ if (document.getElementById("lineOpt").checked) {
+ 	addPathToFollow	(true, canvas.width, canvas.height)
+	robot.robotDraw(false)
+	robot.defineSensors([6, 0, 6])
+	robot.stuck = false
+	redrawEnvironment(robot.ctx)
+	numLights = 0
+
+ }
+ else {
+	checkBeam()
+	numLights = 2
+ }
+
+}
+	
+function load() {
+	active = false
+    window.defaultStatus="RJM's Simple Braitenberg Robot";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	canvas.addEventListener("mousedown", doMousedown, false);		// define mouse functions
+	document.getElementById("LMBack").checked=false
+	document.getElementById("Beam").checked=false
+	document.getElementById("lineOpt").checked = false
+	addMouseDown(canvas)
+
+	addKeySpecial()
+	
+	setGrayBack()
+	drawBrait()
+
+	robot = new aRobot(70, 60, 12, ctx)			// define robot
+	robot.defineSensors([3, 0, 3])				// with light sensors
+	oneRobot = true								// tell library that has robot
+	
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var canvasWidth = robotWrapper.clientWidth - 100;
+	
+	numLights = 2
+	lights[0] = new aLight(canvasWidth*2/3, 110, 10, ctx, 0, "red")
+	lights[1] = new aLight(canvasWidth*2/5, 190, 15, ctx, 1, "red")
+
+    handleResize();
+	
+	setRobotTimer()
+	focusOn(0)
+}
+
+function handleResize(evt) {
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Braitenberg Robot</h1>
+				<p>Define its LL LR RL RR LM and RM neurons so the Braitenberg robot moves 
+				depending on its sensors LS and RS. Sensors are 1 if a light is detected and 0 otherwise. 
+				Neurons should be integers. Left and Right speeds are calculated by</p>
+				<p>  Left: LS * LL + RS * LR + LM</p>
+				<p>  Right: RS * RR + LS * RL + RM</p>
+				<p>Click in the arena to reposition the robot; you can put it back in its original position; and
+				 give it wider beams.</p>
+				 <p>You can also select a line to follow, then the sensors indicate if they can detect the line.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press D to define neuron values; S to start/stop; P to put back in start position; 
+				W to toggle Reverse Left Motor; B to toggle Wider Beam; L toggles Line mode.</p>
+				<p>I, J, K, M move the robot up, left, right, down the screen.</p>  
+		</div>
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>First define the neurons such that the robot moves forward when it sees nothing, but slows down
+				and turns towards a light it sees (rather like a passive seeker).</p>
+				<p>See what happens when you have narrow and wide beams.</p>
+				<p>Next define the neurons so that the robot moves forward when it sees nothing, but speeds up and
+				turns towards a light it sees (more like an active seeker).</p>
+				<p>Then define the neurons so that the robot moves forward when it sees nothing, but 
+				turns away from a light it sees (more like an active phobe).</p>
+				<p>Finally, select the Line to Follow option and get the vehicle to follow it.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+					<p>
+					<canvas id="myCanvasBrait" name="myCanvasBrait" width="200" height="150"></canvas>
+					</p>
+					<p></p>
+					<p></p>
+					<p> <label id="wbLabel">Wider Beams</label> <input type="checkbox" id="Beam" onchange="checkBeam()">  
+					; Line to Follow<input type="checkbox" id="lineOpt" onchange="setLineLight()"></p>
+				</div>
+				<div class="right">
+					<p>LL <input type="text" id="neuronLL" size="2" tabindex="1" value="0">
+						LR <input type="text" id="neuronLR" size="2" tabindex="2" value="0">
+						LM <input type="text" id="neuronLM" size="2" tabindex="3" value="0"></p>
+					<p>RL<input type="text" id="neuronRL" size="2" tabindex="4" value="0">
+						RR <input type="text" id="neuronRR" size="2" tabindex="5" value="0">
+						RM <input type="text" id="neuronRM" size="2" tabindex="6" value="0"></p>
+					<p> Reverse Left Motor <input type="checkbox" id="LMBack" tabindex="7"></p>
+					<p><input type="button" id="StopCheck" value="Press to Stop" onclick="setchecked();"></p>
+					<p><input type="button" id="PutBack" value="Put in Initial Position" onclick="initialPos();"></p>
+				
+				</div>
+				
+		</form>
+	</div>
+	<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robotbrait_files/uor-reversed.png"></a>	
+	</div>
+
+	<div class=""></div>
+	</div>
+	
+  </div>
+
+
+
+
+</body></html>

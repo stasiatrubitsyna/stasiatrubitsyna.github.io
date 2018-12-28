@@ -1,0 +1,349 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robot5_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot5_files/RobotKeyLib.js"></script>
+
+<link rel="stylesheet" type="text/css" href="robot5_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20									// defines how often robot simulation updated
+ 
+ var robot											// define robot object
+ var active = false									// by default not moving
+ var speeds = [0, 0, 0, 0, 0,  0, 0, 0, 0, 0]		// array of speeds for the different situations
+ var inBoxIds = ["robLeftNoObj", "robLeftLeft", "robLeftRight", "robLeftBoth", "robRightNoObj", "robRightLeft", "robRightRight", "robRightBoth"]
+													// names associated with the boxes for entering these speeds
+ var whereFocus = 0									// which is the current input field 
+ var raceOn = false									// race is off initially
+ var raceTime = 0									// how long has race been on - default 0
+ var distanceTravelled = 0								// for finding how far gone
+ var trackingDistance = false
+
+ 
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 68 :		// 'd' or 'D' mean focus on defining first speed : wall on left
+		case 100 :  focusOn(0)
+					break
+		case 87 :       // W 38   means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+					deFocus()
+					break
+		case 83 :       // S 38   means toggle stop start
+		case 115 :
+					checkStr()
+					setchecked()
+					deFocus()
+					break
+		case 85 :		// 'u' or 'U' mean toggle return race
+		case 117 :  checkStr()
+					if (document.getElementById("addTrack").checked)
+						document.getElementById("raceBack").checked = !document.getElementById("raceBack").checked
+					deFocus()
+					break
+		case 72 :		// 'h' or 'H' mean how far moved option (also raceBack)
+		case 104 :  checkStr()
+					if (document.getElementById("comparena").checked)
+						document.getElementById("raceBack").checked = !document.getElementById("raceBack").checked
+					deFocus()
+					break
+		case 65 :		// 'a' or 'A' means set main arens
+		case 97 :   checkStr()
+					setEnv(0)
+					break
+		case 67 :		// 'c' or 'C' means set complex arens
+		case 99 :  checkStr()
+					setEnv(1)
+					break
+		case 84 :       // T   means set track
+		case 116 :  checkStr()
+					setEnv(2)
+					break
+		case 76	:		
+		case 108 :	// l or L to toggle Line to Follow mode
+					checkStr()
+					setEnv(3)
+					break
+		default :	checkKeyRest()			// call general function which moves the robot if press IJKM etc...	
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+	
+//   function to draw environment
+
+function getState() {
+	// determine the state of the robot on the basis of its sensors
+	// get each sensor reading ... if less than 100 then sensor is seeing wall
+  if ( (robot.getSensor(0)<=100) && (robot.getSensor(2)<=100) ) actionNo = 4		// both sensors see wall
+  else if (robot.getSensor(2)<=100) actionNo = 3									// right only
+  else if (robot.getSensor(0)<=100) actionNo = 2									// left only
+  else actionNo = 1																	// nothing seen
+	if (document.getElementById("addLine").checked) actionNo = 5 - actionNo
+}	 
+
+function checkRaceEnd() {
+	// if racing, check to see if reached the area which marks the race end
+	if (raceOn && inRaceEnd(robot.robotx, robot.roboty, document.getElementById("raceBack").checked) ) {
+		raceOn = false				// if so stop
+		active = false
+		document.getElementById("StopCheck").value="Press to Start"
+		document.getElementById("p1").innerHTML="Finished after "+(0.5*raceTime/simtime).toFixed(1)+"s"
+	}								// report how long it took
+}
+
+function checkDistanceEnd() {
+	active = (raceTime < 1000)
+	document.getElementById("p1").innerHTML="Distance moved "+((active) ? "so far " : " in 1000 steps ")+distanceTravelled.toFixed(0)
+									// report how far travelled
+	if (active == false) document.getElementById("StopCheck").value="Press to Start"
+}
+
+function moveTheRobot() {
+  checkStrings()    			// update speeds array from text boxes
+  checkKeySpecial()				// first look for any keys the user has pressed
+  
+  if (active) {
+	if (raceOn || trackingDistance) raceTime++		// if racing or tracking time, increment time taken
+	getState()					// identify state from sensors ... sets actionNo
+								// load up speeds (noting if left motor is wired backwards) for this actionNo
+	lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[actionNo-1]
+	rspeed = speeds[actionNo+3]
+	robot.robotDraw(false)				// remove robot from current place
+	var rpos = [robot.robotx, robot.roboty]		// remember current position
+	robot.moveRobot(lspeed, rspeed)		// move it to new position based on speeds
+	redrawEnvironment(robot.ctx)		// redraw environment behind it and then draw robot
+	if (trackingDistance) {
+		distanceTravelled += distance(rpos[0], rpos[1], robot.robotx, robot.roboty)
+		checkDistanceEnd()
+	}	
+	else if (raceOn) checkRaceEnd()			// if racing check if at the end
+  }
+}   
+	
+function setRobotTimer() {
+	// set up the timer for animating the robot, and the function called every simtime intervals
+	setInterval(function(){moveTheRobot()},simtime);
+}
+
+function race() {
+	active = false
+	if (document.getElementById("raceBack").checked) {			// if racing backwards
+		robot.robotx = 400										// start in green area facing left
+		robot.roboty = 150
+		robot.angle = Math.PI
+	}
+	else {
+		robot.robotx = 50										// start in red area facing right
+		robot.roboty = 50
+		robot.angle = 0
+	}
+	document.getElementById("p1").innerHTML=""					// clear message
+	raceOn = true												// set racing
+	raceTime = 0												// clear timer
+	active = true												// set active
+	drawEnvironment()											// and draw robot in start place
+}
+
+function setchecked() {
+	// when start/stop button pressed, toggle state and update caption on button
+	trackingDistance = false
+	active = !active
+	if (document.getElementById("addTrack").checked) {
+		document.getElementById("StopCheck").value=((active) ? "Stop" : "Start")+" Racing";
+		if (active) race()
+	}	
+	else {
+		document.getElementById("StopCheck").value="Press to "+(active ? "Stop" : "Start");
+		if (document.getElementById("raceBack").checked) {
+			distanceTravelled = 0
+			trackingDistance = true
+			raceTime = 0
+		}	
+	}	
+}	
+
+function updatePrompts(rMode) {
+var prStrs = []
+	if (rMode==3) prStrs = ["Follow Line", "When Both sensors see line", "When Left Sensor sees line", 
+								 "When Right Sensor sees line", "When Neither sensor sees line"]
+	else 				prStrs = ["Avoid Walls", "When No Wall is seen :", "When Wall detected on Left Only :", 
+									"When Wall detected on Right Only : ", "When Wall detected on Both Sides :"]
+	document.getElementById("w0").innerHTML=prStrs[0]
+	document.getElementById("w1").innerHTML=prStrs[1]
+	document.getElementById("w2").innerHTML=prStrs[2]
+	document.getElementById("w3").innerHTML=prStrs[3]
+	document.getElementById("w4").innerHTML=prStrs[4]
+	
+	var rvis = (rMode == 2 || rMode == 1) ? "visible" : "hidden"
+	var rlab = (rMode == 2) ? "Return Race" : (rMode==1) ? "How far moved" : ""
+	document.getElementById("rbLabel").style.visibility = rvis
+	document.getElementById("rbLabel").innerHTML = rlab
+	document.getElementById("raceBack").style.visibility = rvis
+	document.getElementById("p1").innerHTML=""
+}
+
+function setEnv(which) {
+// set the environment depending on which
+	if (which>=0) {
+		document.getElementById("arena").checked = (which == 0)				// blank arena
+		document.getElementById("comparena").checked = (which == 1)			// with little spikes
+		document.getElementById("addTrack").checked = (which == 2)			// with track
+		document.getElementById("addLine").checked = (which == 3)			// add path to Follow
+		document.getElementById("p1").innerHTML=""							// clear any message
+	}	
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	
+	active = false				// stop robot
+	document.getElementById("StopCheck").value= ((which == 2) ? "Start Racing" : "Press to Start")
+	if (which == 2) document.getElementById("raceBack").checked=false
+	
+	raceTrack (document.getElementById("addTrack").checked, false, canvas.width, canvas.height)
+			//  add / remove track
+			
+	if (which == 0 || which == 3) basicEnvironment(canvas.width, canvas.height)
+	else if (which == 1) advancedEnvironment(canvas.width, canvas.height)
+	addPathToFollow	(which == 3, canvas.width, canvas.height)
+	if (which == 3) robot.defineSensors([6, 0, 6])
+	else robot.defineSensors([1, 0, 1])
+	updatePrompts(which)
+	
+	robot.speedControl = document.getElementById("addTrack").checked==false
+			// no speed control by default
+	redrawEnvironment(ctx)		// draw the environment
+}
+
+
+function load() {
+// load function - called when page loaded
+	active = false
+    window.defaultStatus="RJM's Simple Robot System";
+	checkBrowser()
+	
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	robot = new aRobot(50, 50, 10, ctx)						// define the robot
+	document.getElementById("LMBack").checked=false			// clear options
+	document.getElementById("raceBack").checked=false
+	oneRobot = true
+	
+	addMouseDown (canvas)									// allow mouse presses to reposition robot
+	addKeySpecial()											// allow user to command using keys
+
+	setGrayBack()											// grey background
+
+    handleResize();											// in case browser resized
+
+	setEnv(0)												// set basic environment
+	setRobotTimer()
+	focusOn(0)
+}
+
+function handleResize(evt) {
+ // function  to cope when browser resized
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+	
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1 id="w0">Avoid Walls</h1>
+				<p>Define the speeds of the robot's motors depending on what it sees so it turns 
+				away from walls. Speeds are integers as in earlier exercises.</p>
+				<p>You can select a plain arena or a complex one: for the latter you can
+				find how far the robot travels in 1000 steps.</p>
+				<p>You can also select a race track and go racing as before, but now using sensor data.</p>
+				<p>You can also select "Line to Follow", when the sensors report if they can detect
+				the line - choose speeds so the robot follows the line.</p>
+				<h2>Keyboard controls</h2>
+				<p>Press D to define the speeds (use tab to move to next one). W toggles the Left Motor option; 
+				S starts/stops the robot</p>
+				<p> A C T and L set arena/track/line follow; U toggles return race, H if monitor how far moved.</p>
+				<p>I, J, K, M  move the robot Up,Left, Right or Down.</p>
+		</div>
+
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>First define the speed pairs so the robot steers away from the walls it sees. Test in the plain arena 
+				and then the complex one. See how far the robot travels in 1000 steps.</p>
+				<p>Select "Track" and then Start Racing - does the robot get to the middle? If so how quickly?
+				(You may need to rethink what to do when both sensors see a wall.)</p>
+				<p>Select a Return Race and Start Racing - you may need to rethink some speeds.</p>
+				<p>Then select 'Line to Follow' - and get the robot to follow the path.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p id="w1">When No Wall is seen :</p>
+				<p id="w2">When Wall detected on Left Only :</p>
+				<p id="w3">When Wall detected on Right Only : </p>
+				<p id="w4">When Wall detected on Both Sides :</p>
+				<p>Plain Arena<input type="checkbox" id="arena" checked="checked" onchange="setEnv(0)">
+				   ; Complex Arena <input type="checkbox" id="comparena" onchange="setEnv(1)"></p>
+				<p>Track<input type="checkbox" id="addTrack" onchange="setEnv(2)"> 
+					; Line To Follow<input type="checkbox" id="addLine" onchange="setEnv(3)"> </p>
+				</div>
+				<div class="right">
+				<p>Left motor<input type="text" id="robLeftNoObj" size="2" tabindex="1" value="0">
+				&nbsp; Right motor<input type="text" id="robRightNoObj" size="2" tabindex="2" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftLeft" size="2" tabindex="3" value="0">
+				&nbsp; Right motor<input type="text" id="robRightLeft" size="2" tabindex="4" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftRight" size="2" tabindex="5" value="0">
+				&nbsp; Right motor<input type="text" id="robRightRight" size="2" tabindex="6" value="0"></p>
+				<p>Left motor<input type="text" id="robLeftBoth" size="2" tabindex="7" value="0">
+				&nbsp; Right motor<input type="text" id="robRightBoth" size="2" tabindex="8" value="0"></p>
+				<p>Reverse Left Motor<input type="checkbox" id="LMBack"></p>
+				<p><input type="button" id="StopCheck" value="Press to Stop" onclick="setchecked();">
+				   <input type="checkbox" id="raceBack" style="visibility:hidden">
+				   <label id="rbLabel" style="visibility: hidden;"></label></p>
+				<p id="p1"></p></div>	
+				
+			</form>
+		</div>
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot5_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+
+ </div>
+
+
+
+
+</body></html>

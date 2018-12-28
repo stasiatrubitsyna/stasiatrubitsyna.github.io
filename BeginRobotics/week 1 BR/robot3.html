@@ -1,0 +1,187 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<!--[if IE]><script src="https://cdnjs.cloudflare.com/ajax/libs/flot/0.8.3/excanvas.min.js"></script><![endif]-->
+<script type="text/javascript" src="robot3_files/RobotLib.js"></script>
+<script type="text/javascript" src="robot3_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robot3_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+// This is version of robot3 where keys such as L R V are used to navigate
+
+ var simtime = 20										// defines how often robot simulation updated
+ 
+ var robot												// define robot object
+ var active = false										// is robot active?
+ var canvasback = "rgb(233, 234, 232)";					// default colour of background
+ var speeds = [0, 0]									// default speeds of left and right motors
+ var inBoxIds = ["robleftspeed", "robrightspeed"]		// names of input boxes in which speeds are entered
+  
+//   function to draw environment
+
+function checkKeySpecial() {
+// keySpecial has value of a key thathas been pressed ... detect if it is special and act accordingly if so
+	switch (keySpecial) {
+		case 76 :		// 'l' or 'L' mean focus on LeftSpeed Box
+		case 108 :
+					checkStr()										// first tidy current string remove off characters
+					document.controlsys.robleftspeed.focus(); 		// make leftSpeed box the focus
+					whereFocus = 1
+					break
+		case 82 :		// r or R  means focus on RightSpeed Box
+		case 114 :
+					checkStr()
+					document.controlsys.robrightspeed.focus();  
+					whereFocus = 2
+					break
+		case 87 :       // W    means toggle the revise Wire box
+		case 119 :
+					checkStr()
+					document.getElementById("LMBack").checked = !document.getElementById("LMBack").checked
+									// invert checked status of the left motor reverse checkbox
+					deFocus()
+					break
+		case 83 :       // S    means toggle stop / start simulation
+		case 115 :
+					checkStr()
+					setchecked()
+					deFocus()
+					break
+		default: checkKeyRest()		// call general function which moves the robot if press IJKM etc...
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  so dont use it again.
+}	
+	
+function moveTheRobot() {
+// function called by timer to animate the robot
+  checkStrings()				// check that speeds array and input texts are ok 
+  checkKeySpecial()				// next look for any keys the user has pressed
+  var lspeed = ( ( document.getElementById("LMBack").checked ) ? 1 : -1) * speeds[0] 
+		// Get Left Speed by reading value from LeftSpeed box and mult by -1 if not reversed wires
+  var rspeed = speeds[1]
+		// Get Right speed by reading RightSpeed box
+  if (active) {									// if robot has started
+	robot.robotDraw(false)						// undraw robot in current position
+	robot.moveRobot(lspeed, rspeed)				// move to new position, travelling at given speed
+	redrawEnvironment(robot.ctx)				// redraw box round environment, in case partly obliterated
+												// which also draws the robot
+  }
+}   
+
+function setchecked() {
+	// when start/stop button pressed, toggle state and update caption on button to start or stop
+	active = !active
+	document.getElementById("StopCheck").value="Press to "+(active ? "Stop" : "Start");
+}	
+
+function setRobotTimer() {
+	// set up timer, and fact that moveTheRobot function is called every simtime seconds...
+	setInterval(function(){moveTheRobot()},simtime);
+}
+	
+function load() {
+// load function - called when page loaded
+    window.defaultStatus="RJM's Simple Robot System";
+	checkBrowser()
+    var canvas = document.getElementById("myCanvasSYS");		// get canvas
+	var ctx = canvas.getContext("2d");
+	setGrayBack()
+	addMouseDown (canvas)										// allow mouse presses to reposition robot
+	document.getElementById("LMBack").checked=false				// set so left speed not reversed initially
+	addKeySpecial()												// allow user to command using keys
+	basicEnvironment(canvas.width, canvas.height)				// define basic environment
+
+	robot = new aRobot(70, 50, 10, ctx)							// define a robot
+	oneRobot = true												// and specify robot exists
+	
+    handleResize();												// so that page copes if browser resized
+	
+	setRobotTimer()												// enable timer for simulation
+	active = false												// but robot not moving initially
+	focusOn(0)													// set focus on input for left speed
+}
+
+
+function handleResize(evt) {
+// function  to cope when browser resized
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+}
+
+window.addEventListener('resize', handleResize);
+
+// End -->
+</script>
+
+  </head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Investigation</h1>
+				
+				<p>See the robot move based on what you enter as the speeds of the motor for each of its wheels.</p>
+				<p>Speeds should be integers between -40 and 40 and, as viewed from outside the robot, 
+				a positive speed means the wheel turns clockwise. 
+				If "Reverse Left Motor" is ticked, a negative speed turns the left wheel clockwise.</p>
+
+				<p>The Start/Stop button starts/stops the robot. Click in the arena to position the robot there.</p>
+
+				<h2>Keyboard controls</h2>
+				<p>Press L or R to enter Left/Right speed; W to toggle "Reverse Left Motor", S to start/stop the robot.</p>	
+				<p>I, J, K, or M move the robot Up, Left, Right or Down.</p>	
+
+		</div>
+
+		<div class="robot">
+				<h2>Exercise Tasks</h2>
+				<p>See what happens when you try different values for the left and then right motor.</p>
+				<p>Work out how to make the robot go forwards/backwards and spin left/right.</p>
+				<p>Investigate the effect of ticking the "Reverse Left Motor" option.</p>
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p>Speeds for robot</p>
+				<p><input type="button" id="StopCheck" value="Press to Stop" onclick="setchecked();"></p>
+				</div>
+				<div class="right">
+				<p>Left Motor <input type="text" id="robleftspeed" size="2" tabindex="1" value="0">
+				Right Motor<input type="text" id="robrightspeed" size="2" tabindex="2" value="0"></p>
+				<p>Reverse Left Motor<input type="checkbox" id="LMBack" tabindex="3"></p>
+				</div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robot3_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+
+</body></html>

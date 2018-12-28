@@ -1,0 +1,279 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="demoMassSpring_files/drawEric.js"></script>
+
+<link rel="stylesheet" type="text/css" href="demoMassSpring_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+// (c) Professor Richard Mitchell 2015
+
+ var simtime = 30
+ var speed = 50
+ var angle = 0
+ var impSize = speed/100
+ var boardAngle = 0
+ var boardtime = 1000
+ var dirn = 1
+ var famount = 0
+ var camount = 0
+ 
+ var masstime = 1000
+ 
+ var keySpecial = 0
+// var canvasback = "rgb(255, 255, 192)";
+ var canvasback = "rgb(233, 234, 232)"
+
+
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 70 :     // F = adjust amount of friction
+		case 102 :
+					toggleFriction((famount+1) % 3)		// move to next level of friction
+					moveMass()							// and move mass
+					break
+		case 67 :     // C is toggle control
+		case 99 :
+					toggleControl((camount+1) % 3)		// next level of control
+					reverseMotor()						// reverse motor
+					break
+		case 77 :     // M = make mass move
+		case 109 :
+					moveMass()
+					break
+		case 82 :     // R = reverse ERIC
+		case 114 :
+					reverseMotor()
+					break
+		case 66 :     // B is move both
+		case 98 :
+					moveThemBoth()
+					break
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+
+function simulateOsc (oamount, ampOsc, theTime) {
+		// calculate the amount of oscillation at theTime, 
+		// given impulse size ampOsc and oamount of friction/control
+var TCs = [1000, 20, 4]				// amounts of time constant for friction/control
+	return ampOsc*Math.exp(-theTime/TCs[oamount])*Math.sin(theTime/2)
+}
+
+function doWheel() {
+// update Wheel	on ERIC and draw
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+
+	ctx.fillStyle = canvasback;						// clear half of canvas used
+	ctx.fillRect(cw*51, 0, cw*100, ch*100)
+
+	ctx.strokeStyle = "black"						// draw floor
+	ctx.lineWidth = 2
+	putPoints (ctx, [cw*55, ch*75, cw*95, ch*75], false)
+
+	boardtime++										// move to next time
+	
+	boardAngle = simulateOsc(camount, impSize, boardtime)		// calculate angle of board
+	if (Math.abs(boardAngle)<Math.PI/120) boardAngle = 0		// set to 0 if very small
+	
+	drawEric (ctx, cw, ch, cw*75, ch*45, 90, boardAngle, angle, 1)	// draw ERIC sideways
+	
+	angle = angle + dirn*speed*Math.PI/1600						// adjust angle of spokes
+}
+
+function myellipse (ctx, xo, yo, xr, yr, isfirst, islast) {
+// calculate series of points on an ellipse and draw line from previous point to next one
+// ellipse has origin xo,yo and radii xr, yr
+// used to draw spring  .. so first and last ellipses are different
+var fangle = (isfirst) ? 90 : 22.5					// first angle
+var eangle = (islast) ? 90 : 337.5					// end angle
+var xpos, ypos, radA
+	for (var ct = fangle; ct <= eangle; ct+= 7.5) {
+		radA = ct*Math.PI/180						// angle in radians
+		xpos = xo + xr * Math.cos(radA)				// x point
+		ypos = yo - yr * Math.sin(radA)				// y point
+		ctx.lineTo (xpos, ypos)						// draw to x,y
+	}
+}
+
+function doMass() {
+var canvas = document.getElementById("myCanvasSYS");
+var ctx=canvas.getContext("2d");
+var cw = canvas.width / 100;
+var ch = canvas.height / 100;
+
+    ctx.fillStyle = canvasback						// clear left half of canvas
+	ctx.fillRect(cw*2, 0, cw*46, ch*100)
+	
+	masstime++										//next time
+	
+	massPos = ch*(60 + simulateOsc(famount, 15, masstime))		// height of mass
+	
+	ctx.fillStyle = "rgb(64, 64, 64)"				// draw ceiling
+	ctx.fillRect(cw*5, ch*5, cw*40, ch*5)
+
+    ctx.fillStyle = "black"							// draw Mass
+	putPoints(ctx, [cw*15, massPos, cw*35, massPos, cw*40, massPos+ch*15, cw*10, massPos+ch*15], true)
+
+	ctx.strokeStyle = "black"						// set start of spring
+	ctx.lineWidth = 3
+	ctx.moveTo(cw*25, ch*10)
+	var springSize = (massPos-ch*30)				// define size of spring given mass' position
+	for (var ct=1;ct<5; ct++) myellipse(ctx, cw*25, ch*20 + springSize * ct / 4, cw*8, springSize/3, ct==1,ct==4)
+													// draw ellipses for spring
+	ctx.lineTo(cw*25, massPos)						// draw wire to mass
+	ctx.stroke()
+
+}
+
+function doSimulation() {
+// run by timer .. check user keys then updatye mass and ERIC
+	checkKeySpecial()
+	doMass()
+	doWheel()
+}
+	
+function setMotorTimer() {
+	setInterval(function(){doSimulation()},simtime);
+}
+
+function reverseMotor() {
+	dirn = -dirn					// reverse motor direction
+    impSize = dirn * speed/100		// set impulse for ERIC's rock
+	boardtime = 0					// restart time
+}   
+
+function moveMass() {
+    masstime = 0					// re start time for mass
+}
+
+function moveThemBoth() {			//move both mass and ERIC together
+	moveMass()
+	reverseMotor()
+}
+
+function toggleControl(val) {
+		// set level of control
+	document.getElementById("tiltControl0").checked = val == 0
+	document.getElementById("tiltControl1").checked = val == 1
+	document.getElementById("tiltControl2").checked = val == 2
+	camount = val
+	boardtime = 0			// restart timer
+}
+
+function toggleFriction(val) {
+		// set level of friction
+	document.getElementById("withFriction0").checked = val == 0
+	document.getElementById("withFriction1").checked = val == 1
+	document.getElementById("withFriction2").checked = val == 2
+	famount = val
+	masstime = 0
+}
+
+function load() {
+    window.defaultStatus="RJM's Rocking Motion Demo";
+
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	toggleControl(1)
+	toggleFriction(1)
+	
+    document.addEventListener('keydown', function(e) {				// define function for key strokes
+      keySpecial = e.charCode || e.keyCode    // (e.keyCode)
+    }, false);
+	dirn = 1
+	speed = 50
+
+    handleResize();
+	
+	setMotorTimer()
+	moveThemBoth()
+	active = true
+}
+
+function handleResize(evt) {
+   var canvas  = document.getElementById("myCanvasSYS")
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+    var newWidth = robotWrapper.clientWidth - 100
+   canvas.setAttribute('width', newWidth);
+   var newHeight = (newWidth>600) ? 300 : newWidth*0.5
+   canvas.setAttribute('height', newHeight);
+}
+
+window.addEventListener('resize', handleResize);
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>On Velocity Feedback</h1>
+				
+				<p>Apply a force to the mass below the spring and see it move up and down.
+				With no friction it keeps oscillating, but with some friction the oscillations are reduced (damped)
+				and damped more with more friction. Friction is a force, proportional to the mass' velocity (change in position). 
+				You can select no, some or more friction.</p>
+				<p>When ERIC robot accelerates (by reversing direction), its circuit board, motors and battery pack 
+				oscillate. See how the oscillations decay with some / more control. </p>
+				<p>In both cases, the oscillations are reduced using the change in the quantity which oscillates:
+				the mass's position or the angle of ERIC's board: ie using velocity feedback.</p>
+				
+				<h2>Keyboard controls</h2>
+				<p>Press M to move the mass and F to change friction; Press R to reverse ERIC and C to change control. </p>
+		</div>
+		
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="left">
+				<p><input type="button" id="MoveMass" value="Force Mass Down" onclick="moveMass();"></p>
+				<p>No Friction<input type="checkbox" id="withFriction0" onchange="toggleFriction(0)"></p>
+				<p>Some Friction<input type="checkbox" id="withFriction1" checked="checked" onchange="toggleFriction(1)"></p>
+				<p>More Friction<input type="checkbox" id="withFriction2" onchange="toggleFriction(2)"></p>
+				<p><input type="button" id="MoveBoth" value="Move both" onclick="moveThemBoth();"></p></div>
+				<div class="right">
+				<p><input type="button" id="ReverseMotor" value="Reverse Eric's Motor" onclick="reverseMotor();"></p>
+				<p>No Control<input type="checkbox" id="tiltControl0" onchange="toggleControl(0)"></p>
+				<p>Some Control<input type="checkbox" id="tiltControl1" checked="checked" onchange="toggleControl(1)"></p>
+				<p>More Control<input type="checkbox" id="tiltControl2" onchange="toggleControl(2)"></p>
+				<p></p>
+				</div>				
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="demoMassSpring_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+ 
+
+</body></html>

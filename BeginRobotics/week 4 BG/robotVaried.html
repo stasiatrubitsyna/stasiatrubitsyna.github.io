@@ -1,0 +1,476 @@
+<html class=" js"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <style>
+      html.js .no-js, html .js { display: none }
+      html.js .js { display: block }
+    </style>
+    <script type="text/javascript"> document.documentElement.className += " js"</script>
+
+<meta charset="utf-8">
+<script type="text/javascript" src="robotVaried_files/RobotLib.js"></script>
+<script type="text/javascript" src="robotVaried_files/RobotKeyLib.js"></script>
+<link rel="stylesheet" type="text/css" href="robotVaried_files/style.css">
+
+<script language="JavaScript">
+
+
+<!-- Begin
+
+ var simtime = 20
+ 
+ var active = false
+ var Neurons = [0, 0, 0, 0, 0, 0,   0, 0, 0, 0, 0, 0,   -2, 0, 4, -2, 0, 4,  0, 2, 1, 0, 2, 1,  2, 0, 1, 2, 0, 1]
+ 
+
+ 
+ function doMode (rType) {
+   if (keySel>=0 && keySel<5) {
+ 	var rstrs = ["RobotNum1" , "RobotNum2" , "RobotNum3", "RobotNum4" , "RobotNum5"]
+	var estr = rstrs[keySel]
+	document.getElementById(estr).selectedIndex = rType
+    setNeurons(keySel)
+   }
+ }
+ 
+function checkKeySpecial() {
+// keySpecial has value of a key that has been pressed ... detect if it is special and act ,,
+	switch (keySpecial) {
+		case 49 :
+		case 50:
+		case 51:
+		case 52:
+		case 53:
+		case 54: doMode(keySpecial-49)
+				 break
+		case 65 :     // A = first light
+		case 99 :	keySel = 100
+					break
+		case 83 : 
+		case 115 :	// S = second light
+					keySel = 101
+					break	
+		case 68 : 
+		case 102 :	// D = third light
+					keySel = 102
+					break	
+		case 70 : 
+		case 104 :	// F = fourth light
+					keySel = 103
+					break	
+		case 81 :	// Q = select First Robot
+		case 113 :	keySel = 0
+					break
+		case 87 :	// W = select Second Robot
+		case 119 :	keySel = 1
+					break
+		case 69 :	// E = select Third Robot
+		case 103 :	keySel = 2
+					break
+		case 82 :	// R = select Fourth Robot
+		case 114 :	keySel = 3
+					break
+		case 84 :	// T = select Fifth Robot
+		case 116 :	keySel = 4
+					break
+		default: checkKeyRest()
+	}	
+	keySpecial = 0					// have used keySpecial ... now set to 0  o dont do again.
+}	
+
+
+function getState(r) {
+var rState
+  if ( (robots[r].getSensor(0)<=100) && (robots[r].getSensor(2)<=100) ) rState = 4
+  else if (robots[r].getSensor(2)<=100) rState = 3
+  else if (robots[r].getSensor(0)<=100) rState = 2
+  else rState = 1
+  return rState
+}	 
+	
+function getSpeed (isLeft, state) {
+	var ans = 0
+	   switch(state) {
+	       case 1 : ans = 4
+					break
+	       case 2 : ans = (isLeft) ? 4 : -4
+					break
+	       case 3 : ans = (isLeft) ? -4 : 4
+					break
+			case 4 : ans = (isLeft) ? -2 : (Math.random() > 0.5) ? 2 : -2
+					break	
+		}
+		return ans
+}
+
+function getState(r) {
+var rState
+  if ( (robots[r].getSensor(0)<=100) && (robots[r].getSensor(2)<=100) ) rState = 4
+  else if (robots[r].getSensor(2)<=100) rState = 3
+  else if (robots[r].getSensor(0)<=100) rState = 2
+  else rState = 1
+  return rState
+}	 
+	
+function getSpeed (isLeft, state) {
+	var ans = 0
+	   switch(state) {
+	       case 1 : ans = 4
+					break
+	       case 2 : ans = (isLeft) ? 4 : -4
+					break
+	       case 3 : ans = (isLeft) ? -4 : 4
+					break
+			case 4 : ans = (isLeft) ? -2 : (Math.random() > 0.5) ? 2 : -2
+					break	
+		}
+		return ans
+}
+
+
+function getFollowState(r) {
+var sensClose = 70    // was 70 robot.robotsz*2
+var rState
+  if (robots[r].getSensor(2)<sensClose && robots[r].getSensor(0)<sensClose) rState = 6
+  else if (robots[r].getSensor(2)<sensClose) rState = 5
+  else if (robots[r].getSensor(2)<=100) rState = 4
+  else if (robots[r].getSensor(0)<sensClose) rState = 3
+  else if (robots[r].getSensor(0)<=100) rState = 2
+  else rState = 1
+  return rState
+}	 
+
+function getFollowSpeed (isLeft, state) {
+	var ans = 0
+	   switch(state) {
+	       case 1 : ans = 4
+					break
+	       case 2 : ans = (isLeft) ? 2 : 4
+					break
+	       case 3 : ans = (isLeft) ? 3 : 2
+					break
+	       case 4 : ans = (isLeft) ? 4 : 2
+					break
+	       case 5 : ans = (isLeft) ? 2 : 3
+					break
+			case 6 : ans = (isLeft) ? -2 : (Math.random() > 0.5) ? -4 : -2
+					break	
+		}
+		return ans
+}
+
+
+
+function getBraitSensor(rct, ct) {
+var   raws = robots[rct].getSensor(ct)
+var ans = (raws>100) ? 0 : 1
+	return ans
+}		
+
+function getNeuron(rct, nct) {
+var base = rct*6-1
+   return Neurons[base+nct]
+}
+
+function getBraitSpeed(rct, lsensor, rsensor, isLeft) {
+  var ans
+  if (isLeft) ans = getNeuron(rct, 1)*lsensor + getNeuron(rct, 2)*rsensor + getNeuron(rct, 3)
+  else        ans = getNeuron(rct, 5)*lsensor + getNeuron(rct, 4)*rsensor + getNeuron(rct, 6)
+  return ans
+}
+
+function moveTheRobots() {
+var state, lspeed, rspeed, lsensor, rsensor, r, rt
+	checkKeySpecial()
+	for ( r = 0; r < numRobs; r++) robots[r].robotDraw(false)
+	for ( r = 0; r < numRobs; r++) {
+	    rt = robotType(r)
+		if (rt > 1) {			// if a Brait vehicle
+			lsensor = getBraitSensor(r, 0)
+			rsensor = getBraitSensor (r, 2)
+			lspeed = getBraitSpeed(r, lsensor, rsensor, true)  
+			rspeed = getBraitSpeed(r, lsensor, rsensor, false)
+		}	
+		else if (rt == 1){
+			state = getFollowState(r);
+			lspeed = getFollowSpeed(true, state)  
+			rspeed = getFollowSpeed(false, state)
+		}
+		else {
+			state = getState(r);
+			lspeed = getSpeed(true, state)  
+			rspeed = getSpeed(false, state)
+		}
+		robots[r].moveRobot(lspeed, rspeed)
+		robots[r].robotDraw(true)
+	}
+	redrawEnvironment(robots[0].ctx)
+}   
+	
+function setRobotTimer() {
+	setInterval(function(){moveTheRobots()},simtime);
+}
+
+function drawSimpleRobot(cname, rcol) {
+    var canvas = document.getElementById(cname);
+	var ctx = canvas.getContext("2d");
+	var r = canvas.height*0.4
+	var cx = canvas.width/2
+	var cy=canvas.height/2
+	ctx.fillStyle = rcol
+	ctx.beginPath();
+	ctx.arc(cx,cy, r ,0,2*Math.PI);
+	ctx.fill()
+	ctx.strokeStyle = "black"
+	ctx.lineWidth=2
+	ctx.beginPath()
+	ctx.moveTo(cx, cy-r)
+	ctx.lineTo(cx, cy+r)
+	ctx.stroke()
+	ctx.lineWidth=4
+	ctx.beginPath()
+	ctx.moveTo(cx-r/2, cy-r)
+	ctx.lineTo(cx+r/2, cy-r)
+	ctx.stroke()
+	ctx.beginPath()
+	ctx.moveTo(cx-r/2, cy+r)
+	ctx.lineTo(cx+r/2, cy+r)
+	ctx.stroke()
+	
+
+}
+	
+function drawKeyRobot(ct, rstr) {
+	dummyRobot.robotx = 35
+	dummyRobot.roboty = 25 + ct*35
+	dummyRobot.basecol = robots[ct].basecol
+	dummyRobot.sensorTypes = robots[ct].sensorTypes
+	dummyRobot.robotDraw(true)
+	dummyRobot.ctx.fillStyle = "black"
+	dummyRobot.ctx.fillText(rstr, dummyRobot.robotx-30, dummyRobot.roboty)
+}
+
+function drawKeyLight(ct, lstr) {
+	dummyLight.lightx = 120
+	dummyLight.lighty = 30 + ct*40
+	dummyLight.lightcol = lights[ct].lightcol
+	dummyLight.lightDraw(true)
+	dummyLight.ctx.fillStyle = "black"
+	dummyLight.ctx.fillText(lstr, dummyLight.lightx-25, dummyLight.lighty)
+}
+
+function drawKeys() {
+var canvas2 = document.getElementById("myCanvasKey");
+var ctx2=canvas2.getContext("2d");
+	ctx2.fillStyle = canvasback;
+    ctx2.fillRect(0, 0, canvas2.width, canvas2.height);
+	ctx2.fillStyle = "black"
+	var ct
+	var rkeys = "QWERT"
+	for (ct = 0; ct< numRobs; ct++) drawKeyRobot(ct, rkeys[ct])
+	var lkeys = "ASDF"
+	for (ct = 0; ct< numLights; ct++) drawKeyLight(ct, lkeys[ct])
+}
+	
+function robotType (which) {
+	var rstrs = ["RobotNum1" , "RobotNum2" , "RobotNum3", "RobotNum4" , "RobotNum5"]
+	var estr = rstrs[which]
+	return document.getElementById(estr).selectedIndex
+}
+	
+	function setNeurons(which) {
+	var narray = [0, 0, 0, 0, 0, 0]
+	var  sType = [3, 0, 3]
+		switch (robotType(which)) {
+		    case 0 : sType = [2, 0, 2]
+					break
+		    case 1 : sType = [2, 0, 2]
+					break
+			case 2 : narray = [-2, 0, 4, -2, 0, 4]
+					break
+			case 3 : narray = [0, 2, 1, 0, 2, 1]
+					break
+			case 4 : narray = [2, 0, 1, 2, 0, 1]
+					break
+			case 5 : narray = [0, -2, 1, 0, -2, 1]
+					break
+		}
+		robots[which].robotDraw(false)
+		for (var ct = 0; ct<6; ct++) {
+			Neurons[which*6+ct] = narray[ct]
+		}
+		robots[which].defineSensors(sType)
+		robots[which].robotDraw(true)
+	}
+	
+function load() {
+    window.defaultStatus="RJM's Multiple Robot System";
+    var canvas = document.getElementById("myCanvasSYS");
+	var ctx = canvas.getContext("2d");
+	
+	document.getElementById("RobotNum1").selectedIndex = 0
+	document.getElementById("RobotNum2").selectedIndex = 1
+	document.getElementById("RobotNum3").selectedIndex = 2
+	document.getElementById("RobotNum4").selectedIndex = 3
+	document.getElementById("RobotNum5").selectedIndex = 4
+	
+	numRobs = 5
+	robots[0] = new aRobot(200, 90, 10, ctx)
+	robots[0].basecol = "rgb(0, 128, 128)"
+	robots[0].defineSensors([2, 0, 2])
+	robots[1] = new aRobot(180, 40, 8, ctx)
+	robots[1].angle = Math.PI/2
+	robots[1].basecol = "rgb(128, 0, 128)"
+	robots[1].defineSensors([2, 0, 2])
+	robots[2] = new aRobot(450, 200, 7, ctx)
+	robots[2].angle = Math.PI
+	robots[2].basecol = "rgb(128, 128, 0)"
+	robots[2].defineSensors([3, 0, 3])
+	robots[3] = new aRobot(250, 100, 5, ctx)
+	robots[3].basecol = "rgb(0, 128, 0)"
+	robots[1].defineSensors([3, 0, 3])
+	robots[4] = new aRobot(350, 150, 9, ctx)
+	robots[4].basecol = "rgb(128, 0, 0)"
+	robots[2].defineSensors([4, 0, 4])
+	for (var ct = 0; ct < numRobs; ct++) robots[ct].robNum = ct
+	
+	numLights = 4
+	lights[0] = new aLight(500, 110, 10, ctx, 0, "red")
+	lights[1] = new aLight(230, 170, 15, ctx, 1, "blue")
+	lights[2] = new aLight(380, 250, 5, ctx, 2, "green")
+	lights[3] = new aLight(100, 50, 5, ctx, 3, "purple")
+	
+	addKeySpecial()
+  	addMouseDown(canvas)
+	mouseSel =-1
+
+    var canvas2 = document.getElementById("myCanvasKey");
+	var ctx2 = canvas2.getContext("2d");
+	ctx2.font = '14pt Calibri';
+	
+	dummyRobot = new aRobot(50, 25, 7, ctx2)
+	dummyRobot.forKey = true
+	dummyRobot.sensorReadings = [30, 30, 30]
+	dummyLight = new aLight(50, 25, 7, ctx2, 0, "black")
+	drawKeys()
+	
+	setGrayBack()
+
+    handleResize();
+
+	drawKeys()
+	
+	setRobotTimer()
+	active = true
+}
+
+function handleResize(evt) {
+   var robotWrapper = document.getElementsByClassName("robot")[0];
+   var newWidth = robotWrapper.clientWidth - 100;
+   doResize(newWidth)
+
+   drawKeys()
+}
+
+window.addEventListener('resize', handleResize);
+
+
+// End -->
+</script>
+
+</head>
+
+<!-- STEP TWO: Add the relevant event handlers to the BODY tag  --> 
+
+<body onload="load()">
+ <div class="no-js">
+      <!-- Fallback content here  -->
+      <h1>We're sorry, but you must have Javascript enabled in your browser to access this exercise.</h1>
+ </div>
+ <div class="js">
+	<div id="wrapper">
+
+		<div class="intro">
+				<h1>Multi Robot Demo</h1>
+				<p>Five Robots are provided which can be set to avoid or follow walls or be a Braitenberg vehicle.
+				Use the drop down lists to select the type of each.</p>
+				<p>If you left click on the screen within a robot it is selected.
+				When you left click again that robot is repositioned where you click.
+				You can also click on the lights to move them in the same way.
+				</p>
+				<h2>Keyboard controls</h2>
+				<p>For moving robot/light, select it by pressing the key depicted in the selecting key canvas.
+				Then press I, J, K or M to move it up, left, right or down.
+				Or 1, 2, 3, 4, 5, 6 to change it to Object Avoider/Follower; Shy/Agressive Seeker; Shy/Aggressive Phobe</p>
+		</div>
+
+		<div class="robot">
+			<form name="controlsys">
+				<canvas id="myCanvasSYS" name="myCanvasSYS" width="772" height="300"></canvas>
+				<div class="right">
+				<p>Robot Types</p>
+				<p>Q<select id="RobotNum1" onchange="setNeurons(0)">
+					<option value="0" selected="selected">Object avoider
+					</option><option value="1">Object follower
+					</option><option value="2">Shy Seeker
+					</option><option value="3">Agressive Seeker
+					</option><option value="4">Shy Phobe
+					</option><option value="5">Agressive Phobe
+				</option></select></p>
+				<p>W<select id="RobotNum2" onchange="setNeurons(1)">
+					<option value="0">Object avoider
+					</option><option value="1" selected="selected">Object follower
+					</option><option value="2">Shy Seeker
+					</option><option value="3">Agressive Seeker
+					</option><option value="4">Shy Phobe
+					</option><option value="5">Agressive Phobe
+				</option></select></p>
+				<p>E<select id="RobotNum3" onchange="setNeurons(2)">
+					<option value="0">Object avoider
+					</option><option value="1">Object follower
+					</option><option value="2" selected="selected">Shy Seeker
+					</option><option value="3">Agressive Seeker
+					</option><option value="4">Shy Phobe
+					</option><option value="5">Agressive Phobe
+				</option></select></p>
+				<p>R<select id="RobotNum4" onchange="setNeurons(3)">
+					<option value="0">Object avoider
+					</option><option value="1">Object follower
+					</option><option value="2">Shy Seeker
+					</option><option value="3" selected="selected">Agressive Seeker
+					</option><option value="4">Shy Phobe
+					</option><option value="5">Agressive Phobe
+				</option></select></p>
+				<p>T<select id="RobotNum5" onchange="setNeurons(4)">
+					<option value="0">Object avoider
+					</option><option value="1">Object follower
+					</option><option value="2">Shy Seeker
+					</option><option value="3">Agressive Seeker
+					</option><option value="4" selected="selected">Shy Phobe
+					</option><option value="5">Agressive Phobe
+				</option></select></p>
+				</div>
+				<div class="right">
+				<p>Selecting Keys</p>
+				<canvas id="myCanvasKey" name="myCanvasKey" width="160" height="200"></canvas>
+				<p></p>
+				<p></p>
+				<p></p>
+				<p></p>
+				<p></p>
+				</div>				
+
+			</form>
+		</div>
+
+		<div id="footer">
+			<div class="left"><p>© <a href="mailto:r.j.mitchell@reading.ac.uk">Prof Richard Mitchell,</a> 2015</p></div>
+			<a href="http://www.reading.ac.uk/"><img class="right" src="robotVaried_files/uor-reversed.png"></a>	
+		</div>
+
+		<div class=""></div>
+	
+	</div>
+ </div>
+
+
+</body></html>
