@@ -1,54 +1,24 @@
 <!doctype html>
 <html itemscope="" itemtype="http://schema.org/WebPage" lang="ru-UA"><head>
 <body>
-<style>
-.video-container { 
-    position: relative; 
-    padding-bottom: 48.25%; 
-    padding-top: 30px; 
-    height: 0; 
-    overflow: hidden; 
-} 
-.video-container iframe, .video-container object, .video-container embed { 
-    position: absolute; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%;
-}
-</style>
-<div class=video-container>
-   <center> <div id="player"></div></center>
-</div>
-<script>
-    // 1. This code loads the IFrame Player API code asynchronously.  
-     var tag = document.createElement('script');  
-      
-    tag.src = "https://www.youtube.com/iframe_api";  
-    var firstScriptTag = document.getElementsByTagName('script')[0];  
-    firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);  
-      
-    // 2. This function creates an <iframe> (and YouTube player) after the API code downloads.  
-    var player;  
-    function onYouTubeIframeAPIReady() {  
-        player = new YT.Player('player', {  
-            height: '650',  
-            width: '1157',
-            videoId: 'H2UYFzZHlmE', 
-            playerVars: {
-		showinfo: 0,
-		rel: 0},
-            events: {  
-                'onReady': onPlayerReady  
-            }  
-        });  
-    }  
-      
-    // 3. The API will call this function when the video player is ready.  
-    function onPlayerReady(event) {  
-        player.setPlaybackQuality('hd1080'); // Here we set the quality (yay!)  
-    }  
-</script>
+<center>
+<h1>Definitions of robots</h1>
 
+<p>‘Robot’ comes from the Czech word Robota meaning serf or slave – it was defined in Karel Capek’s drama Rossum’s Universal Robots, RUR, 1921</p>
+
+Robot Institute of America definition:
+
+    “A robot is a re-programmable multi-functional manipulator designed to move materials, parts, tools or specialised devices, through variable programmed motions for the purpose of a variety of tasks.”
+
+However there are some more controversial definitions like the Datatronics.net definition:
+
+    “A program that automatically searches the world wide web for files”
+
+Or Douglas Adams’, in Hitchhiker’s Guide to the Galaxy:
+
+    “Your plastic pal who is fun to be with!”
+
+There are lots of different ways of thinking of robots. In the discussion below, describe your definition of a robot. Try and be creative in your answer and stick to using your own words.
+</center>
 </body>
 </html>
